@@ -492,14 +492,14 @@ function saveSetupKey() {
     localStorage.setItem('promptforge_api_key', val);
     document.getElementById('setup-overlay').style.display = 'none';
     showToast('API key saved', 'success');
-    fetchModels();
+    populateModelSelect();
   }
 }
 
 function dismissSetup() {
   localStorage.setItem('promptforge_setup_dismissed', '1');
   document.getElementById('setup-overlay').style.display = 'none';
-  fetchModels();
+  populateModelSelect();
 }
 
 function showApiKeyInput() {
@@ -517,7 +517,7 @@ function saveApiKey() {
     localStorage.setItem('promptforge_api_key', val);
     document.getElementById('api-key-banner').classList.remove('visible');
     showToast('API key saved locally', 'success');
-    fetchModels();
+    populateModelSelect();
   }
 }
 
@@ -525,56 +525,43 @@ function saveApiKey() {
 
 const IS_LOCAL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 const OR_URL = IS_LOCAL ? '/api/chat' : 'https://openrouter.ai/api/v1/chat/completions';
-async function fetchModels() {
-  const key = getApiKey();
-  if (!key) { populateDefaultModels(); return; }
-  // Shared key → only Gemma 3 12B; personal key → fetch all models
-  if (key === HARDCODED_KEY) { populateDefaultModels(); return; }
-  enableModelSelect();
-  try {
-    const url = IS_LOCAL ? '/api/models' : 'https://openrouter.ai/api/v1/models';
-    const res = await fetch(url, { headers: { 'Authorization': `Bearer ${key}` } });
-    if (!res.ok) { populateDefaultModels(); return; }
-    const json = await res.json();
-    const rawModels = Array.isArray(json) ? json : (json.data || []);
-    const low = [], mid = [], high = [];
-    rawModels.forEach(m => {
-      const pp = parseFloat(m.pricing?.prompt);
-      if (pp === 0 || (pp > 0 && pp < 0.1)) low.push(m);
-      else if (pp < 1.0) mid.push(m);
-      else if (pp >= 1.0) high.push(m);
-    });
-    const select = document.getElementById('model-select');
-    const currentVal = select.value;
-    select.innerHTML = '';
-    const addGroup = (label, list) => {
-      if (!list.length) return;
-      const g = document.createElement('optgroup');
-      g.label = label;
-      list.sort((a, b) => (a.name || a.id).localeCompare(b.name || b.id));
-      list.forEach(m => {
-        const o = document.createElement('option');
-        o.value = m.id; o.textContent = m.name || m.id;
-        if (m.id === currentVal || (!currentVal && m.id === 'google/gemma-3-12b-it')) o.selected = true;
-        g.appendChild(o);
-      });
-      select.appendChild(g);
-    };
-    addGroup('Low-Tier', low);
-    addGroup('Mid-Tier', mid);
-    addGroup('High-Tier', high);
-  } catch (e) {
-    console.warn('Model fetch failed:', e);
-    populateDefaultModels();
-  }
-}
-function populateDefaultModels() {
+const CURATED_MODELS = {
+  'Low-Tier': [
+    { id: 'google/gemma-3-12b-it', label: 'Gemma 3 12B' },
+    { id: 'meta-llama/llama-3.1-8b-instruct', label: 'Llama 3.1 8B' }
+  ],
+  'Mid-Tier': [
+    { id: 'openai/gpt-4o-mini', label: 'GPT-4o Mini' },
+    { id: 'deepseek/deepseek-chat', label: 'DeepSeek V3' }
+  ],
+  'High-Tier': [
+    { id: 'openai/gpt-4o', label: 'GPT-4o' },
+    { id: 'anthropic/claude-3.5-sonnet', label: 'Claude 3.5 Sonnet' }
+  ]
+};
+
+function populateModelSelect() {
   const s = document.getElementById('model-select');
-  s.innerHTML = '<option value="google/gemma-3-12b-it">Gemma 3 12B</option>';
-  s.disabled = true;
-}
-function enableModelSelect() {
-  document.getElementById('model-select').disabled = false;
+  const currentVal = s.value;
+  const hasPersonalKey = !!localStorage.getItem('promptforge_api_key');
+  if (!hasPersonalKey) {
+    s.innerHTML = '<option value="google/gemma-3-12b-it">Gemma 3 12B (shared)</option>';
+    s.disabled = true;
+    return;
+  }
+  s.disabled = false;
+  s.innerHTML = '';
+  Object.entries(CURATED_MODELS).forEach(([tier, models]) => {
+    const g = document.createElement('optgroup');
+    g.label = tier;
+    models.forEach(m => {
+      const o = document.createElement('option');
+      o.value = m.id; o.textContent = m.label;
+      if (m.id === currentVal || (!currentVal && m.id === 'google/gemma-3-12b-it')) o.selected = true;
+      g.appendChild(o);
+    });
+    s.appendChild(g);
+  });
 }
 
 class ApiError extends Error {
@@ -1330,7 +1317,7 @@ document.getElementById('raw-prompt').addEventListener('input', () => {
   if (!hasKey && !localStorage.getItem('promptforge_setup_dismissed')) {
     document.getElementById('setup-overlay').style.display = 'flex';
   }
-  fetchModels();
+  populateModelSelect();
 
   // Restore draft
   const draft = localStorage.getItem('promptforge_draft');
