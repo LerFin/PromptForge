@@ -263,7 +263,7 @@
       </div>
       <div class="topbar-right">
         <span class="kbd-hint"><kbd id="kbd-mod">Ctrl</kbd>+<kbd>Enter</kbd></span>
-        <span class="pill">v1.35</span>
+        <span class="pill">v1.4</span>
         <button class="btn-icon" onclick="showApiKeyInput()" title="Change API key">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
         </button>
@@ -492,6 +492,7 @@ function saveSetupKey() {
     localStorage.setItem('promptforge_api_key', val);
     document.getElementById('setup-overlay').style.display = 'none';
     showToast('API key saved', 'success');
+    fetchModels();
   }
 }
 
@@ -515,6 +516,7 @@ function saveApiKey() {
     localStorage.setItem('promptforge_api_key', val);
     document.getElementById('api-key-banner').classList.remove('visible');
     showToast('API key saved locally', 'success');
+    fetchModels();
   }
 }
 
@@ -522,9 +524,50 @@ function saveApiKey() {
 
 const IS_LOCAL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 const OR_URL = IS_LOCAL ? '/api/chat' : 'https://openrouter.ai/api/v1/chat/completions';
-const OR_MODELS = [
-  { id: 'google/gemma-3-12b-it', label: 'Gemma 3 12B' }
-];
+async function fetchModels() {
+  const key = getApiKey();
+  if (!key) { populateDefaultModels(); return; }
+  try {
+    const url = IS_LOCAL ? '/api/models' : 'https://openrouter.ai/api/v1/models';
+    const res = await fetch(url, { headers: { 'Authorization': `Bearer ${key}` } });
+    if (!res.ok) { populateDefaultModels(); return; }
+    const json = await res.json();
+    const rawModels = Array.isArray(json) ? json : (json.data || []);
+    const low = [], mid = [], high = [];
+    rawModels.forEach(m => {
+      const pp = parseFloat(m.pricing?.prompt);
+      if (pp === 0 || (pp > 0 && pp < 0.1)) low.push(m);
+      else if (pp < 1.0) mid.push(m);
+      else if (pp >= 1.0) high.push(m);
+    });
+    const select = document.getElementById('model-select');
+    const currentVal = select.value;
+    select.innerHTML = '';
+    const addGroup = (label, list) => {
+      if (!list.length) return;
+      const g = document.createElement('optgroup');
+      g.label = label;
+      list.sort((a, b) => (a.name || a.id).localeCompare(b.name || b.id));
+      list.forEach(m => {
+        const o = document.createElement('option');
+        o.value = m.id; o.textContent = m.name || m.id;
+        if (m.id === currentVal || (!currentVal && m.id === 'google/gemma-3-12b-it')) o.selected = true;
+        g.appendChild(o);
+      });
+      select.appendChild(g);
+    };
+    addGroup('Low-Tier', low);
+    addGroup('Mid-Tier', mid);
+    addGroup('High-Tier', high);
+  } catch (e) {
+    console.warn('Model fetch failed:', e);
+    populateDefaultModels();
+  }
+}
+function populateDefaultModels() {
+  const s = document.getElementById('model-select');
+  s.innerHTML = '<option value="google/gemma-3-12b-it">Gemma 3 12B</option>';
+}
 
 class ApiError extends Error {
   constructor(msg, { retryAfter, isQuota } = {}) {
@@ -1279,6 +1322,7 @@ document.getElementById('raw-prompt').addEventListener('input', () => {
   if (!hasKey && !localStorage.getItem('promptforge_setup_dismissed')) {
     document.getElementById('setup-overlay').style.display = 'flex';
   }
+  fetchModels();
 
   // Restore draft
   const draft = localStorage.getItem('promptforge_draft');
