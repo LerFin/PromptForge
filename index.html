@@ -564,7 +564,7 @@ const FORMATS = {
 function getFmt() { return FORMATS[document.getElementById('format-select').value] || FORMATS.rtcf; }
 
 function getModelPricing(modelId) {
-  if (modelId === 'google/gemma-3-12b-it') return { prompt: 0, completion: 0 };
+  if (modelId === 'google/gemma-4-31b-it:free' || modelId === 'google/gemma-3-12b-it') return { prompt: 0, completion: 0 };
   for (const t in CURATED_MODELS) {
     const m = CURATED_MODELS[t].find(x => x.id === modelId);
     if (m) return m.pricing;
@@ -587,7 +587,7 @@ function populateModelSelect() {
   const currentVal = s.value;
   const hasPersonalKey = !!localStorage.getItem('promptforge_api_key');
   if (!hasPersonalKey) {
-    s.innerHTML = '<option value="google/gemma-3-12b-it">Gemma 3 12B (shared)</option>';
+    s.innerHTML = '<option value="google/gemma-4-31b-it:free">Gemma 4 31B (free, shared)</option>';
     s.disabled = true;
     return;
   }
