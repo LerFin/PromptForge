@@ -3,6 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#141413" />
+  <link rel="manifest" href="manifest.json" />
   <title>PromptForge</title>
   <style>
     :root {
@@ -133,12 +135,17 @@
     .rtcf-card.loading textarea { background: linear-gradient(90deg, var(--surface-card) 0%, var(--surface-raised) 50%, var(--surface-card) 100%); background-size: 800px 100%; animation: shimmer 1.5s ease infinite; color: transparent; resize: none; }
     .rtcf-card.loading .rtcf-counter { opacity: 0; }
     .rtcf-card.pop-in { animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+    .rtcf-card.collapsed textarea, .rtcf-card.collapsed .rtcf-counter { display: none; }
+    .rtcf-card.collapsed .rtcf-card-header { border-bottom: none; }
+    .rtcf-card textarea { font-size: var(--output-font-size, 13px); }
     .rtcf-card-header { display: flex; align-items: center; justify-content: space-between; padding: 8px var(--gap-md); border-bottom: 1px solid var(--border); }
     .rtcf-card-label { font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
-    .rtcf-card-label.role { color: var(--blue); }
-    .rtcf-card-label.task { color: var(--orange); }
-    .rtcf-card-label.context-block { color: var(--green); }
-    .rtcf-card-label.format { color: var(--accent); }
+    .rtcf-card-label.blue { color: var(--blue); }
+    .rtcf-card-label.orange { color: var(--orange); }
+    .rtcf-card-label.green { color: var(--green); }
+    .rtcf-card-label.accent { color: var(--accent); }
+    .rtcf-card-label.purple { color: var(--purple); }
+    .rtcf-card-label.muted { color: var(--muted); }
     .rtcf-card-actions { display: flex; gap: 2px; }
     .rtcf-card textarea { width: 100%; min-height: 80px; background: transparent; border: none; padding: var(--gap-md); color: var(--fg); font-size: var(--fs-sm); font-family: var(--font-body); line-height: 1.6; resize: none; outline: none; overflow-y: hidden; }
     .rtcf-counter { display: block; text-align: right; padding: 0 var(--gap-md) var(--gap-xs); font-size: 10px; color: var(--muted); font-family: var(--font-mono); pointer-events: none; }
@@ -263,7 +270,7 @@
       </div>
       <div class="topbar-right">
         <span class="kbd-hint"><kbd id="kbd-mod">Ctrl</kbd>+<kbd>Enter</kbd></span>
-        <span class="pill">v1.4</span>
+        <span class="pill">v1.5</span>
         <button class="btn-icon" onclick="showApiKeyInput()" title="Change API key">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
         </button>
@@ -281,6 +288,7 @@
             <span class="label">Enter your OpenRouter API key</span>
             <input type="text" id="api-key-input" placeholder="Paste your API key here" />
             <button class="btn btn-primary btn-sm" onclick="saveApiKey()">Save</button>
+            <button class="btn btn-ghost btn-sm" onclick="clearApiKey()" title="Revert to shared key" style="font-size:11px;">Clear</button>
             <span style="font-size:var(--fs-xs);color:var(--muted);">Stored locally. Never shared.</span>
           </div>
 
@@ -314,6 +322,14 @@
                 <label>Model</label>
                 <select id="model-select">
                   <option value="google/gemma-3-12b-it">Gemma 3 12B</option>
+                </select>
+              </div>
+              <div class="control-group">
+                <label>Format</label>
+                <select id="format-select">
+                  <option value="rtcf">RTCF</option>
+                  <option value="costar">CO-STAR</option>
+                  <option value="roses">ROSES</option>
                 </select>
               </div>
               <div class="control-group slider-group">
@@ -350,61 +366,20 @@
               </div>
               <div class="presets-list" id="presets-list"></div>
             </div>
+
+            <div style="margin-top:var(--gap-md)">
+              <a id="advanced-toggle" style="font-size:var(--fs-xs);color:var(--muted);cursor:pointer;user-select:none;" onclick="toggleAdvanced()">Advanced ▾</a>
+              <div id="advanced-section" style="display:none;margin-top:var(--gap-sm);padding:var(--gap-md);background:var(--surface);border-radius:var(--radius-lg);border:1px solid var(--border);">
+                <label style="font-size:var(--fs-xs);color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;font-weight:500;">Custom System Prompt</label>
+                <textarea id="custom-prompt" style="width:100%;min-height:90px;background:var(--surface-raised);border:1px solid var(--border);border-radius:var(--radius);padding:var(--gap-md);color:var(--fg);font-size:var(--fs-sm);resize:vertical;outline:none;margin-top:var(--gap-xs);line-height:1.6;font-family:var(--font-mono);" placeholder="Leave blank for default prompt.&#10;Use {goal}, {tone}, {cplx}, {format_sections} as placeholders."></textarea>
+              </div>
+            </div>
           </div>
 
           <div class="output-section" id="output-section">
             <div id="chain-breadcrumb"></div>
 
-            <div class="rtcf-grid" id="rtcf-grid">
-              <div class="rtcf-card animate-in animate-in-1">
-                <div class="rtcf-card-header">
-                  <span class="rtcf-card-label role">Role</span>
-                  <div class="rtcf-card-actions">
-                    <button class="btn-icon" onclick="copySection('role')" title="Copy Role">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                    </button>
-                  </div>
-                </div>
-                <textarea id="rtcf-role" placeholder="Role description…" oninput="autoResize(this);updateSectionCounter('role')"></textarea>
-                <div class="rtcf-counter" id="counter-role">0 words · 0 chars</div>
-              </div>
-              <div class="rtcf-card animate-in animate-in-2">
-                <div class="rtcf-card-header">
-                  <span class="rtcf-card-label task">Task</span>
-                  <div class="rtcf-card-actions">
-                    <button class="btn-icon" onclick="copySection('task')" title="Copy Task">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                    </button>
-                  </div>
-                </div>
-                <textarea id="rtcf-task" placeholder="Task description…" oninput="autoResize(this);updateSectionCounter('task')"></textarea>
-                <div class="rtcf-counter" id="counter-task">0 words · 0 chars</div>
-              </div>
-              <div class="rtcf-card animate-in animate-in-3">
-                <div class="rtcf-card-header">
-                  <span class="rtcf-card-label context-block">Context</span>
-                  <div class="rtcf-card-actions">
-                    <button class="btn-icon" onclick="copySection('context')" title="Copy Context">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                    </button>
-                  </div>
-                </div>
-                <textarea id="rtcf-context" placeholder="Context…" oninput="autoResize(this);updateSectionCounter('context')"></textarea>
-                <div class="rtcf-counter" id="counter-context">0 words · 0 chars</div>
-              </div>
-              <div class="rtcf-card animate-in animate-in-4">
-                <div class="rtcf-card-header">
-                  <span class="rtcf-card-label format">Format</span>
-                  <div class="rtcf-card-actions">
-                    <button class="btn-icon" onclick="copySection('format')" title="Copy Format">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                    </button>
-                  </div>
-                </div>
-                <textarea id="rtcf-format" placeholder="Format specification…" oninput="autoResize(this);updateSectionCounter('format')"></textarea>
-                <div class="rtcf-counter" id="counter-format">0 words · 0 chars</div>
-              </div>
-            </div>
+            <div class="rtcf-grid" id="rtcf-grid"></div>
             <div class="actions-row">
               <button class="btn btn-primary" onclick="copyFullPrompt()" id="copy-btn">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
@@ -419,6 +394,11 @@
                 Save Template
               </button>
               <button class="btn btn-ghost" onclick="resetForge()">Reset</button>
+              <span style="margin-left:auto;display:flex;align-items:center;gap:4px;">
+                <span style="font-size:10px;color:var(--muted);">A</span>
+                <input type="range" id="font-size-slider" min="11" max="18" value="13" style="width:60px;height:3px;-webkit-appearance:none;appearance:none;background:var(--border);border-radius:2px;outline:none;cursor:pointer;" oninput="setFontSize(this.value)" />
+                <span style="font-size:14px;color:var(--fg-secondary);">A</span>
+              </span>
             </div>
           </div>
         </div>
@@ -447,11 +427,16 @@
       <div class="sidebar-tab active" onclick="switchSidebarTab('history', this)">History</div>
       <div class="sidebar-tab" onclick="switchSidebarTab('templates', this)">Templates</div>
     </div>
-    <div class="sidebar-panel active" id="panel-history">
-      <div class="search-wrap">
-        <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-        <input type="text" id="history-search" placeholder="Search history…" oninput="renderHistory()" />
-      </div>
+      <div class="sidebar-panel active" id="panel-history">
+        <div class="search-wrap">
+          <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input type="text" id="history-search" placeholder="Search history…" oninput="renderHistory()" />
+          <div style="display:flex;gap:4px;margin-top:6px;">
+            <button class="btn-ghost" style="font-size:10px;padding:3px 8px;" onclick="exportHistory()">Export</button>
+            <button class="btn-ghost" style="font-size:10px;padding:3px 8px;" onclick="document.getElementById('import-input').click()">Import</button>
+            <input type="file" id="import-input" accept=".json" style="display:none" onchange="importHistory(event)" />
+          </div>
+        </div>
       <div class="history-list" id="history-list"></div>
     </div>
     <div class="sidebar-panel" id="panel-templates"></div>
@@ -527,18 +512,60 @@ const IS_LOCAL = window.location.hostname === 'localhost' || window.location.hos
 const OR_URL = IS_LOCAL ? '/api/chat' : 'https://openrouter.ai/api/v1/chat/completions';
 const CURATED_MODELS = {
   'Low-Tier': [
-    { id: 'google/gemma-4-31b-it:free', label: 'Gemma 4 31B (free)' },
-    { id: 'meta-llama/llama-3.1-8b-instruct', label: 'Llama 3.1 8B' }
+    { id: 'google/gemma-4-31b-it:free', label: 'Gemma 4 31B (free)', pricing: { prompt: 0, completion: 0 } },
+    { id: 'meta-llama/llama-3.1-8b-instruct', label: 'Llama 3.1 8B', pricing: { prompt: 0.058, completion: 0.058 } }
   ],
   'Mid-Tier': [
-    { id: 'openai/gpt-4o-mini', label: 'GPT-4o Mini' },
-    { id: 'deepseek/deepseek-chat', label: 'DeepSeek V3' }
+    { id: 'openai/gpt-4o-mini', label: 'GPT-4o Mini', pricing: { prompt: 0.15, completion: 0.60 } },
+    { id: 'deepseek/deepseek-chat', label: 'DeepSeek V3', pricing: { prompt: 0.078, completion: 0.31 } }
   ],
   'High-Tier': [
-    { id: 'openai/gpt-4o', label: 'GPT-4o' },
-    { id: 'anthropic/claude-3.5-sonnet', label: 'Claude 3.5 Sonnet' }
+    { id: 'openai/gpt-4o', label: 'GPT-4o', pricing: { prompt: 2.50, completion: 10.00 } },
+    { id: 'anthropic/claude-3.5-sonnet', label: 'Claude 3.5 Sonnet', pricing: { prompt: 3.00, completion: 15.00 } }
   ]
 };
+
+const FORMATS = {
+  rtcf: {
+    sections: ['role', 'task', 'context', 'format'],
+    labels: { role: 'Role', task: 'Task', context: 'Context', format: 'Format' },
+    colors: { role: 'blue', task: 'orange', context: 'green', format: 'accent' },
+    promptSuffix: 'Return ONLY valid JSON with exactly these 4 keys: role, task, context, format. Do NOT include any text before or after the JSON.'
+  },
+  costar: {
+    sections: ['context', 'objective', 'style', 'tone', 'audience', 'response'],
+    labels: { context: 'Context', objective: 'Objective', style: 'Style', tone: 'Tone', audience: 'Audience', response: 'Response' },
+    colors: { context: 'blue', objective: 'orange', style: 'green', tone: 'accent', audience: 'purple', response: 'muted' },
+    promptSuffix: 'Return ONLY valid JSON with exactly these 6 keys: context, objective, style, tone, audience, response. Do NOT include any text before or after the JSON.'
+  },
+  roses: {
+    sections: ['role', 'objective', 'style', 'examples', 'sensibility'],
+    labels: { role: 'Role', objective: 'Objective', style: 'Style', examples: 'Examples', sensibility: 'Sensibility' },
+    colors: { role: 'blue', objective: 'orange', style: 'green', examples: 'accent', sensibility: 'purple' },
+    promptSuffix: 'Return ONLY valid JSON with exactly these 5 keys: role, objective, style, examples, sensibility. Do NOT include any text before or after the JSON.'
+  }
+};
+
+function getFmt() { return FORMATS[document.getElementById('format-select').value] || FORMATS.rtcf; }
+
+function getModelPricing(modelId) {
+  if (modelId === 'google/gemma-3-12b-it') return { prompt: 0, completion: 0 };
+  for (const t in CURATED_MODELS) {
+    const m = CURATED_MODELS[t].find(x => x.id === modelId);
+    if (m) return m.pricing;
+  }
+  return null;
+}
+
+function estimateCost(inputChars, maxTok) {
+  const model = document.getElementById('model-select').value;
+  const p = getModelPricing(model);
+  if (!p) return null;
+  const inTok = Math.ceil(inputChars / 3.5);
+  const outTok = maxTok;
+  const cost = (inTok / 1e6) * p.prompt + (outTok / 1e6) * p.completion;
+  return { cost, inTok, outTok, prompt: p.prompt, completion: p.completion };
+}
 
 function populateModelSelect() {
   const s = document.getElementById('model-select');
@@ -564,6 +591,149 @@ function populateModelSelect() {
   });
 }
 
+function renderOutputGrid() {
+  const fmt = getFmt();
+  const grid = document.getElementById('rtcf-grid');
+  grid.innerHTML = fmt.sections.map((s, i) => {
+    const label = fmt.labels[s];
+    const color = fmt.colors[s];
+    return `<div class="rtcf-card pop-in" style="animation-delay:${i * 0.04}s" data-section="${s}">
+      <div class="rtcf-card-header">
+        <span class="rtcf-card-label ${color}">${label}</span>
+        <div class="rtcf-card-actions">
+          <button class="btn-icon collapse-btn" onclick="toggleCardCollapse(this)" title="Collapse">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="18 15 12 9 6 15"/></svg>
+          </button>
+          <button class="btn-icon" onclick="copySection('${s}')" title="Copy ${label}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+        </div>
+      </div>
+      <textarea id="section-${s}" placeholder="${label}…" oninput="autoResize(this);updateSectionCounter('${s}')"></textarea>
+      <div class="rtcf-counter" id="counter-${s}">0 words · 0 chars</div>
+    </div>`;
+  }).join('');
+}
+
+function toggleCardCollapse(btn) {
+  const card = btn.closest('.rtcf-card');
+  card.classList.toggle('collapsed');
+  const svg = btn.querySelector('svg polyline');
+  if (card.classList.contains('collapsed')) {
+    svg.setAttribute('points', '18 9 12 15 6 9');
+  } else {
+    svg.setAttribute('points', '18 15 12 9 6 15');
+  }
+}
+
+function toggleAdvanced() {
+  const sec = document.getElementById('advanced-section');
+  const tog = document.getElementById('advanced-toggle');
+  const open = sec.style.display !== 'block';
+  sec.style.display = open ? 'block' : 'none';
+  tog.textContent = open ? 'Advanced ▴' : 'Advanced ▾';
+}
+
+function clearApiKey() {
+  localStorage.removeItem('promptforge_api_key');
+  document.getElementById('api-key-banner').classList.remove('visible');
+  populateModelSelect();
+  showToast('Personal key cleared, using shared key', 'success');
+}
+
+function exportHistory() {
+  const data = getHistory();
+  if (!data.length) { showToast('No history to export', ''); return; }
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `promptforge_history_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast('History exported', 'success');
+}
+
+function importHistory(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      if (!Array.isArray(data)) throw new Error('Invalid format');
+      const existing = getHistory();
+      const merged = [...data, ...existing];
+      saveHistory(merged);
+      renderHistory();
+      showToast(`Imported ${data.length} items`, 'success');
+    } catch { showToast('Invalid history file', 'error'); }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+function setFontSize(val) {
+  document.documentElement.style.setProperty('--output-font-size', val + 'px');
+  localStorage.setItem('promptforge_font_size', val);
+}
+
+function updateShareUrl(sections, parsed) {
+  const data = { f: document.getElementById('format-select').value, s: parsed };
+  try {
+    const encoded = btoa(JSON.stringify(data));
+    const url = new URL(window.location);
+    url.hash = encoded;
+    history.replaceState(null, '', url);
+  } catch {}
+}
+
+function restoreFromHash() {
+  if (!window.location.hash || window.location.hash.length < 10) return;
+  try {
+    const decoded = JSON.parse(atob(window.location.hash.slice(1)));
+    if (decoded.f && FORMATS[decoded.f] && decoded.s) {
+      document.getElementById('format-select').value = decoded.f;
+      renderOutputGrid();
+      const fmt = getFmt();
+      fmt.sections.forEach(s => {
+        const el = document.getElementById(`section-${s}`);
+        if (el && decoded.s[s]) {
+          el.value = decoded.s[s];
+          autoResize(el);
+          updateSectionCounter(s);
+        }
+      });
+      document.getElementById('output-section').classList.add('visible');
+    }
+  } catch {}
+}
+
+function saveSession() {
+  const data = {
+    g: document.getElementById('goal-select').value,
+    t: document.getElementById('tone-select').value,
+    c: document.getElementById('complexity-slider').value,
+    m: document.getElementById('model-select').value,
+    f: document.getElementById('format-select').value
+  };
+  try { localStorage.setItem('promptforge_session', JSON.stringify(data)); } catch {}
+}
+
+function restoreSession() {
+  try {
+    const raw = localStorage.getItem('promptforge_session');
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    if (data.g) document.getElementById('goal-select').value = data.g;
+    if (data.t) document.getElementById('tone-select').value = data.t;
+    if (data.c) document.getElementById('complexity-slider').value = data.c;
+    if (data.m && !document.getElementById('model-select').disabled) {
+      document.getElementById('model-select').value = data.m;
+    }
+    if (data.f && FORMATS[data.f]) document.getElementById('format-select').value = data.f;
+  } catch {}
+}
+
 class ApiError extends Error {
   constructor(msg, { retryAfter, isQuota } = {}) {
     super(msg);
@@ -577,10 +747,11 @@ async function callAI(rawPrompt, goal, tone, cplx) {
   if (!key) throw new ApiError('No API key set');
 
   const model = document.getElementById('model-select').value;
+  const fmt = getFmt();
 
-  const systemPrompt = `You are a prompt engineering expert. Given a user's raw request, their selected goal, tone, and complexity level, generate a structured RTCF (Role, Task, Context, Format) prompt.
+  let systemPrompt = `You are a prompt engineering expert. Given a user's raw request, their selected goal, tone, and complexity level, generate a structured ${fmt.label} prompt.
 
-The RTCF should transform their weak prompt into a detailed, battle-ready specification for any AI. Make each section specific to their request — not generic.
+The output should transform their weak prompt into a detailed, battle-ready specification for any AI. Make each section specific to their request — not generic.
 
 Goal: ${goal}
 Tone: ${tone}
@@ -588,7 +759,18 @@ Complexity (1-10): ${cplx}
 ${cplx <= 3 ? 'Keep the output concise and focused. Short paragraphs, no fluff.' : cplx >= 7 ? 'Be extremely thorough. Include edge cases, examples, detailed structure, constraints, success criteria, and potential pitfalls. Make every section rich and specific.' : 'Provide a balanced level of detail. Cover the key points thoroughly but avoid unnecessary digressions.'}
 ${tone === 'technical' ? 'Use precise technical language. Assume domain expertise.' : tone === 'persuasive' ? 'Use compelling, benefit-driven language.' : tone === 'casual' ? 'Use conversational, friendly language.' : tone === 'aggressive' ? 'Use direct, assertive language.' : 'Use professional, polished language.'}
 
-Return ONLY valid JSON with exactly these 4 keys: role, task, context, format. Do NOT include any text before or after the JSON — no greetings, no explanations, no markdown. Start with { and end with }.`;
+${fmt.promptSuffix}`;
+
+  // Custom prompt override
+  const custom = document.getElementById('custom-prompt').value.trim();
+  if (custom) {
+    const sectionsStr = fmt.sections.map(s => fmt.labels[s]).join(', ');
+    systemPrompt = custom
+      .replace(/\{goal\}/g, goal)
+      .replace(/\{tone\}/g, tone)
+      .replace(/\{cplx\}/g, cplx)
+      .replace(/\{format_sections\}/g, sectionsStr);
+  }
 
   const body = JSON.stringify({
     model,
@@ -651,9 +833,10 @@ Return ONLY valid JSON with exactly these 4 keys: role, task, context, format. D
       try { parsed = JSON.parse(raw); } catch { /* fall through */ }
     }
   }
-  if (!parsed || !parsed.role || !parsed.task || !parsed.context || !parsed.format) {
+  const valid = fmt.sections.every(s => parsed[s] && typeof parsed[s] === 'string');
+  if (!valid) {
     console.error('Raw AI response:', text);
-    throw new ApiError('AI response was not valid RTCF JSON. Check console for details.');
+    throw new ApiError(`AI response was missing required keys. Expected: ${fmt.sections.join(', ')}. Check console.`);
   }
   return parsed;
 }
@@ -698,7 +881,8 @@ async function forgePrompt() {
 
   try {
     statusEl.textContent = 'Generating...';
-    const { role, task, context, format } = await callAI(raw, goal, tone, complexity);
+    const parsed = await callAI(raw, goal, tone, complexity);
+    const fmt = getFmt();
 
     document.querySelectorAll('.rtcf-card').forEach(c => c.classList.remove('loading'));
 
@@ -707,18 +891,26 @@ async function forgePrompt() {
 
     document.getElementById('reroll-btn').classList.add('visible');
 
-    document.getElementById('rtcf-role').value = role;
-    document.getElementById('rtcf-task').value = task;
-    document.getElementById('rtcf-context').value = context;
-    document.getElementById('rtcf-format').value = format;
+    fmt.sections.forEach(s => {
+      document.getElementById(`section-${s}`).value = parsed[s] || '';
+    });
     document.querySelectorAll('.rtcf-card textarea').forEach(el => autoResize(el));
-    ['role', 'task', 'context', 'format'].forEach(s => updateSectionCounter(s));
+    fmt.sections.forEach(s => updateSectionCounter(s));
 
     localStorage.removeItem('promptforge_draft');
 
-    saveToHistory(raw, goal, tone, role, task, context, format);
+    saveToHistory(raw, goal, tone, parsed, fmt.sections);
     renderHistory();
     updateStats(goal);
+    updateShareUrl(fmt.sections, parsed);
+    // Show cost estimate
+    const cost = estimateCost(raw.length, complexity >= 7 ? 8192 : complexity >= 4 ? 4096 : 2048);
+    if (cost && cost.cost > 0) {
+      statusEl.textContent = `~${cost.inTok} in / ~${cost.outTok} out · $${cost.cost.toFixed(4)}`;
+      statusEl.classList.remove('active');
+    } else {
+      statusEl.textContent = cost ? 'Free model' : '';
+    }
     resolved = true;
   } catch (err) {
     if (err instanceof ApiError && err.isQuota && err.retryAfter > 0) {
@@ -730,21 +922,26 @@ async function forgePrompt() {
       btn.querySelector('.btn-text').innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 10H3"/><path d="M21 6H3"/><path d="M17 14H3"/><path d="M21 18H3"/><path d="M17 14l4-4-4-4"/><path d="M17 10l4 4-4 4"/></svg> Forge`;
       btn.classList.add('loading');
       try {
-        const { role, task, context, format } = await callAI(raw, goal, tone, complexity);
-        document.getElementById('rtcf-role').value = role;
-        document.getElementById('rtcf-task').value = task;
-        document.getElementById('rtcf-context').value = context;
-        document.getElementById('rtcf-format').value = format;
+        const parsed = await callAI(raw, goal, tone, complexity);
+        const fmt = getFmt();
+        fmt.sections.forEach(s => {
+          document.getElementById(`section-${s}`).value = parsed[s] || '';
+        });
         _chainDepth = 0;
         document.getElementById('chain-breadcrumb').innerHTML = '';
         const output = document.getElementById('output-section');
         output.classList.add('visible');
         document.querySelectorAll('.rtcf-card textarea').forEach(el => autoResize(el));
-        ['role', 'task', 'context', 'format'].forEach(s => updateSectionCounter(s));
+        fmt.sections.forEach(s => updateSectionCounter(s));
         output.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        saveToHistory(raw, goal, tone, role, task, context, format);
+        saveToHistory(raw, goal, tone, parsed, fmt.sections);
         renderHistory();
         updateStats(goal);
+        const costR = estimateCost(raw.length, complexity >= 7 ? 8192 : complexity >= 4 ? 4096 : 2048);
+        if (costR && costR.cost > 0) {
+          document.getElementById('forge-status').textContent = `~${costR.inTok} in / ~${costR.outTok} out · $${costR.cost.toFixed(4)}`;
+        }
+        updateShareUrl(fmt.sections, parsed);
         resolved = true;
         return;
       } catch (retryErr) {
@@ -773,23 +970,26 @@ async function forgePrompt() {
 // ─── COPY ──────────────────────────────────────────────────────────────────
 
 function getFullPrompt() {
-  const role = document.getElementById('rtcf-role').value;
-  const task = document.getElementById('rtcf-task').value;
-  const context = document.getElementById('rtcf-context').value;
-  const format = document.getElementById('rtcf-format').value;
-  return `## Role\n${role}\n\n## Task\n${task}\n\n## Context\n${context}\n\n## Format\n${format}`;
+  const fmt = getFmt();
+  return fmt.sections.map(s => {
+    const val = document.getElementById(`section-${s}`).value;
+    return `## ${fmt.labels[s]}\n${val}`;
+  }).join('\n\n');
 }
 
 function copyFullPrompt() {
   const text = getFullPrompt();
-  if (!document.getElementById('rtcf-role').value.trim()) { showToast('Nothing to copy yet', ''); return; }
+  const fmt = getFmt();
+  const first = document.getElementById(`section-${fmt.sections[0]}`);
+  if (!first || !first.value.trim()) { showToast('Nothing to copy yet', ''); return; }
   navigator.clipboard.writeText(text).then(() => showToast('Full prompt copied', 'success')).catch(() => fallbackCopy(text));
 }
 
 function copySection(section) {
-  const el = document.getElementById(`rtcf-${section}`);
-  if (!el.value.trim()) return;
-  const label = section.charAt(0).toUpperCase() + section.slice(1);
+  const el = document.getElementById(`section-${section}`);
+  if (!el || !el.value.trim()) return;
+  const fmt = getFmt();
+  const label = fmt.labels[section] || section.charAt(0).toUpperCase() + section.slice(1);
   const text = `## ${label}\n${el.value}`;
   navigator.clipboard.writeText(text).then(() => showToast(`${label} copied`, 'success')).catch(() => fallbackCopy(text));
 }
@@ -806,7 +1006,9 @@ function fallbackCopy(text) {
 
 function chainPrompt() {
   const prompt = getFullPrompt();
-  if (!document.getElementById('rtcf-role').value.trim()) { showToast('No prompt to chain', ''); return; }
+  const fmt = getFmt();
+  const first = document.getElementById(`section-${fmt.sections[0]}`);
+  if (!first || !first.value.trim()) { showToast('No prompt to chain', ''); return; }
   document.getElementById('raw-prompt').value = prompt;
   _chainDepth++;
   document.getElementById('chain-breadcrumb').innerHTML = `<span>Chain</span> → <span>Refinement ${_chainDepth}</span>`;
@@ -825,12 +1027,14 @@ function saveHistory(data) {
   try { localStorage.setItem('promptforge_history', JSON.stringify(data)); } catch {}
 }
 
-function saveToHistory(rawPrompt, goal, tone, role, task, context, format) {
+function saveToHistory(rawPrompt, goal, tone, parsed, sections) {
   const history = getHistory();
-  const finalPrompt = `## Role\n${role}\n\n## Task\n${task}\n\n## Context\n${context}\n\n## Format\n${format}`;
+  const fmtId = document.getElementById('format-select').value;
+  const fmt = FORMATS[fmtId];
+  const finalPrompt = sections.map(s => `## ${fmt.labels[s]}\n${parsed[s] || ''}`).join('\n\n');
   history.unshift({
     id: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2),
-    rawPrompt, goal, tone, role, task, context, format, finalPrompt,
+    rawPrompt, goal, tone, formatId: fmtId, sections: parsed,
     createdAt: Date.now(), starred: false
   });
   if (history.length > 200) history.pop();
@@ -868,12 +1072,26 @@ function loadHistoryItem(id) {
   document.getElementById('raw-prompt').value = item.rawPrompt;
   document.getElementById('goal-select').value = item.goal;
   document.getElementById('tone-select').value = item.tone;
-  document.getElementById('rtcf-role').value = item.role;
-  document.getElementById('rtcf-task').value = item.task;
-  document.getElementById('rtcf-context').value = item.context;
-  document.getElementById('rtcf-format').value = item.format;
+  // Restore format if saved, then render grid and populate
+  if (item.formatId && FORMATS[item.formatId]) {
+    document.getElementById('format-select').value = item.formatId;
+  }
+  renderOutputGrid();
+  const fmt = getFmt();
+  const sections = item.sections || {};
+  if (item.role) { // legacy history format
+    fmt.sections.forEach(s => {
+      const el = document.getElementById(`section-${s}`);
+      if (el) el.value = sections[s] || item[s] || '';
+    });
+  } else {
+    fmt.sections.forEach(s => {
+      const el = document.getElementById(`section-${s}`);
+      if (el) el.value = sections[s] || '';
+    });
+  }
   document.querySelectorAll('.rtcf-card textarea').forEach(el => autoResize(el));
-  ['role', 'task', 'context', 'format'].forEach(s => updateSectionCounter(s));
+  fmt.sections.forEach(s => updateSectionCounter(s));
   document.getElementById('output-section').classList.add('visible');
   document.getElementById('chain-breadcrumb').innerHTML = '';
   document.getElementById('content').scrollTop = 0;
@@ -959,18 +1177,23 @@ function saveCustomTemplates(data) {
 }
 
 function saveAsCustomTemplate() {
-  const role = document.getElementById('rtcf-role').value.trim();
-  const task = document.getElementById('rtcf-task').value.trim();
-  if (!role && !task) { showToast('Forge something first', ''); return; }
+  const fmt = getFmt();
+  const sections = {};
+  let hasContent = false;
+  fmt.sections.forEach(s => {
+    const val = document.getElementById(`section-${s}`).value.trim();
+    sections[s] = val;
+    if (val) hasContent = true;
+  });
+  if (!hasContent) { showToast('Forge something first', ''); return; }
   const name = prompt('Name this template:', '');
   if (!name) return;
   const templates = getCustomTemplates();
   templates.push({
     id: Date.now().toString(36), name,
     goal: document.getElementById('goal-select').value,
-    role, task,
-    context: document.getElementById('rtcf-context').value,
-    format: document.getElementById('rtcf-format').value,
+    formatId: document.getElementById('format-select').value,
+    sections,
     createdAt: Date.now()
   });
   saveCustomTemplates(templates);
@@ -994,12 +1217,20 @@ function loadCustomTemplate(id) {
   if (!t) return;
   document.getElementById('raw-prompt').value = t.name;
   document.getElementById('goal-select').value = t.goal;
-  document.getElementById('rtcf-role').value = t.role;
-  document.getElementById('rtcf-task').value = t.task;
-  document.getElementById('rtcf-context').value = t.context;
-  document.getElementById('rtcf-format').value = t.format;
+  if (t.formatId && FORMATS[t.formatId]) {
+    document.getElementById('format-select').value = t.formatId;
+  }
+  renderOutputGrid();
+  const fmt = getFmt();
+  const sections = t.sections || {};
+  // Legacy: migrate old single-field templates
+  if (t.role) { fmt.sections.forEach(s => { if (t[s]) sections[s] = t[s]; }); }
+  fmt.sections.forEach(s => {
+    const el = document.getElementById(`section-${s}`);
+    if (el) el.value = sections[s] || '';
+  });
   document.querySelectorAll('.rtcf-card textarea').forEach(el => autoResize(el));
-  ['role', 'task', 'context', 'format'].forEach(s => updateSectionCounter(s));
+  fmt.sections.forEach(s => updateSectionCounter(s));
   document.getElementById('output-section').classList.add('visible');
   switchMainView('forge');
   showToast('Loaded custom template', 'success');
@@ -1103,7 +1334,7 @@ function renderPresets() {
 }
 
 function saveCurrentContextAsPreset() {
-  const context = document.getElementById('rtcf-context').value.trim();
+  const context = (document.getElementById('section-context') || document.getElementById('section-role'))?.value.trim() || '';
   const target = context || 'My stack: React, Node, Postgres';
   const label = prompt('Preset label:', context ? context.substring(0, 40) + '…' : 'My stack');
   if (!label) return;
@@ -1118,10 +1349,12 @@ function applyPreset(idx) {
   const presets = getPresets();
   const p = presets[idx];
   if (!p) return;
-  const ta = document.getElementById('rtcf-context');
-  ta.value = ta.value ? ta.value + '\n' + p.value : p.value;
-  autoResize(ta);
-  updateSectionCounter('context');
+  const el = document.getElementById('section-context') || document.getElementById('section-role');
+  if (!el) return;
+  el.value = el.value ? el.value + '\n' + p.value : p.value;
+  autoResize(el);
+  const sectionName = el.id.replace('section-', '');
+  updateSectionCounter(sectionName);
   showToast('Preset applied', 'success');
 }
 
@@ -1169,7 +1402,8 @@ function autoResize(el) {
 }
 
 function updateSectionCounter(section) {
-  const el = document.getElementById(`rtcf-${section}`);
+  const el = document.getElementById(`section-${section}`);
+  if (!el) return;
   const counter = document.getElementById(`counter-${section}`);
   const text = el.value;
   const words = text.trim() ? text.trim().split(/\s+/).length : 0;
@@ -1194,10 +1428,12 @@ document.addEventListener('keydown', (e) => {
     if (document.getElementById('output-section').classList.contains('visible')) { e.preventDefault(); copyFullPrompt(); }
     return;
   }
-  if (mod && !e.shiftKey && ['1', '2', '3', '4'].includes(e.key)) {
-    const sections = ['role', 'task', 'context', 'format'];
+  if (mod && !e.shiftKey && /^[1-6]$/.test(e.key)) {
+    const fmt = getFmt();
     const idx = parseInt(e.key) - 1;
-    if (document.getElementById('output-section').classList.contains('visible')) { e.preventDefault(); copySection(sections[idx]); }
+    if (idx < fmt.sections.length && document.getElementById('output-section').classList.contains('visible')) {
+      e.preventDefault(); copySection(fmt.sections[idx]);
+    }
     return;
   }
   if (e.key === 'Escape' && document.getElementById('output-section').classList.contains('visible') && target.tagName !== 'TEXTAREA' && target.tagName !== 'INPUT') { resetForge(); return; }
@@ -1255,7 +1491,11 @@ function closeSidebar() {
 
 function resetForge() {
   document.getElementById('output-section').classList.remove('visible');
-  ['rtcf-role', 'rtcf-task', 'rtcf-context', 'rtcf-format'].forEach(id => document.getElementById(id).value = '');
+  const fmt = getFmt();
+  fmt.sections.forEach(s => {
+    const el = document.getElementById(`section-${s}`);
+    if (el) el.value = '';
+  });
   document.getElementById('content').scrollTop = 0;
 }
 
@@ -1306,6 +1546,21 @@ document.getElementById('raw-prompt').addEventListener('input', () => {
   localStorage.setItem('promptforge_draft', document.getElementById('raw-prompt').value);
 });
 
+// Session auto-save on control changes
+['goal-select', 'tone-select', 'model-select', 'format-select'].forEach(id => {
+  document.getElementById(id).addEventListener('change', saveSession);
+});
+document.getElementById('complexity-slider').addEventListener('input', saveSession);
+
+// Format change → re-render output grid
+document.getElementById('format-select').addEventListener('change', () => {
+  renderOutputGrid();
+  document.getElementById('output-section').classList.remove('visible');
+});
+
+// Hash URL sharing on load
+window.addEventListener('hashchange', restoreFromHash);
+
 // ─── INIT ──────────────────────────────────────────────────────────────────
 
 (function init() {
@@ -1319,6 +1574,16 @@ document.getElementById('raw-prompt').addEventListener('input', () => {
   }
   populateModelSelect();
 
+  // Restore session (goal, tone, complexity, model, format)
+  restoreSession();
+
+  // Restore font size
+  const savedFs = localStorage.getItem('promptforge_font_size');
+  if (savedFs) { setFontSize(savedFs); document.getElementById('font-size-slider').value = savedFs; }
+
+  // Render initial output grid (format-aware)
+  renderOutputGrid();
+
   // Restore draft
   const draft = localStorage.getItem('promptforge_draft');
   if (draft) {
@@ -1326,6 +1591,9 @@ document.getElementById('raw-prompt').addEventListener('input', () => {
     autoResize(document.getElementById('raw-prompt'));
     updatePromptCounter();
   }
+
+  // Try to restore shared forge from URL hash
+  restoreFromHash();
 
   renderHistory();
   renderTemplates();
@@ -1335,6 +1603,11 @@ document.getElementById('raw-prompt').addEventListener('input', () => {
   renderStats();
   autoResize(document.getElementById('raw-prompt'));
   updatePromptCounter();
+
+  // PWA Service Worker registration
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
 })();
 </script>
 </body>
