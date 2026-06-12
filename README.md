@@ -10,7 +10,7 @@ Turn a rough idea like *"write me a blog post about AI"* into a structured RTCF,
 
 - **AI-powered forge** — Select a goal (Coding, Writing, Business, etc.), tone, complexity, and model; the app sends your raw prompt to OpenRouter and returns a structured multi-section prompt
 - **3 output formats** — RTCF (Role/Task/Context/Format), CO-STAR (Context/Objective/Style/Tone/Audience/Response), ROSES (Role/Objective/Style/Examples/Sensibility)
-- **Curated model tiers** — Low-Tier (free/cheap), Mid-Tier (balanced), High-Tier (most powerful). Shared key locked to Gemma 3 12B; personal key unlocks all models
+- **Curated model tiers** — Low-Tier (free/cheap), Mid-Tier (balanced), High-Tier (most powerful). Enter your own OpenRouter API key to unlock all models
 - **Re-roll** — Forge again with the same input
 - **Prompt chaining** — Use the forged output as input for another refinement
 - **Copy sections** — Copy individual cards or the full prompt as formatted text
@@ -33,7 +33,7 @@ Turn a rough idea like *"write me a blog post about AI"* into a structured RTCF,
 ## Usage
 
 1. Open the [GitHub Pages link](https://lerfin.github.io/PromptForge/)
-2. Enter your OpenRouter API key (or use the shared key for limited access)
+2. Enter your OpenRouter API key (stored locally in your browser)
 3. Paste a raw prompt, choose Goal / Tone / Model / Complexity / Format
 4. Click **Forge**
 5. Copy individual sections or the full prompt

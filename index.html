@@ -324,7 +324,7 @@
             <span class="label">Enter your OpenRouter API key</span>
             <input type="text" id="api-key-input" placeholder="Paste your API key here" />
             <button class="btn btn-primary btn-sm" onclick="saveApiKey()">Save</button>
-            <button class="btn btn-ghost btn-sm" onclick="clearApiKey()" title="Revert to shared key" style="font-size:11px;">Clear</button>
+            <button class="btn btn-ghost btn-sm" onclick="clearApiKey()" title="Remove your API key" style="font-size:11px;">Clear</button>
             <span style="font-size:var(--fs-xs);color:var(--muted);">Stored in your browser. Only use on trusted devices.</span>
           </div>
 
@@ -368,7 +368,7 @@
                 <div class="control-group" style="flex:1.2;min-width:120px;">
                   <label>Model</label>
                   <select id="model-select">
-                    <option value="google/gemma-4-31b-it:free">Gemma 4 31B (free, shared)</option>
+                    <option value="google/gemma-4-31b-it:free">Gemma 4 31B (free)</option>
                   </select>
                 </div>
                 <div class="control-group slider-group" style="flex:2;">
@@ -500,10 +500,10 @@
 <div class="setup-overlay" id="setup-overlay" style="display:none;">
   <div class="setup-modal">
     <h2>Welcome to PromptForge</h2>
-    <p>Enter your OpenRouter API key. Your key is stored in your browser's local storage — only use this app on trusted devices. It's sent directly to OpenRouter and never shared elsewhere.</p>
+    <p>Enter your <strong>OpenRouter API key</strong> to get started. Your key stays in your browser and is sent directly to OpenRouter — never shared elsewhere.</p>
     <input type="password" id="setup-key-input" placeholder="sk-or-v1-..." autofocus />
     <button class="btn btn-primary" onclick="saveSetupKey()">Save My Key</button>
-    <a class="skip-link" onclick="dismissSetup()">Use shared key instead</a>
+    <a class="skip-link" onclick="dismissSetup()">Skip for now (can't forge without a key)</a>
   </div>
 </div>
 
@@ -615,7 +615,7 @@ function populateModelSelect() {
   const currentVal = s.value;
   const hasPersonalKey = !!localStorage.getItem('promptforge_api_key');
   if (!hasPersonalKey) {
-    s.innerHTML = '<option value="google/gemma-4-31b-it:free">Gemma 4 31B (free, shared)</option>';
+    s.innerHTML = '<option value="" disabled selected>Enter your API key to forge</option>';
     s.disabled = true;
     return;
   }
@@ -681,7 +681,8 @@ function clearApiKey() {
   localStorage.removeItem('promptforge_api_key');
   document.getElementById('api-key-banner').classList.remove('visible');
   populateModelSelect();
-  showToast('Personal key cleared, using shared key', 'success');
+  document.getElementById('setup-overlay').style.display = 'flex';
+  showToast('API key cleared', 'success');
 }
 
 function exportHistory() {
@@ -1729,9 +1730,9 @@ function showToast(msg, type) {
   const toast = document.createElement('div');
   toast.className = `toast ${type || ''}`;
   if (type === 'success') {
-    toast.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>${msg}`;
+    toast.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>${escapeHtml(msg)}`;
   } else if (type === 'error') {
-    toast.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>${msg}`;
+    toast.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>${escapeHtml(msg)}`;
   } else {
     toast.textContent = msg;
   }
