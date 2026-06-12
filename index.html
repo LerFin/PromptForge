@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#141413" />
   <link rel="manifest" href="manifest.json" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; connect-src 'self' https://openrouter.ai; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; worker-src 'self';">
   <title>PromptForge</title>
   <style>
     :root {
@@ -324,7 +325,7 @@
             <input type="text" id="api-key-input" placeholder="Paste your API key here" />
             <button class="btn btn-primary btn-sm" onclick="saveApiKey()">Save</button>
             <button class="btn btn-ghost btn-sm" onclick="clearApiKey()" title="Revert to shared key" style="font-size:11px;">Clear</button>
-            <span style="font-size:var(--fs-xs);color:var(--muted);">Stored locally. Never shared.</span>
+            <span style="font-size:var(--fs-xs);color:var(--muted);">Stored in your browser. Only use on trusted devices.</span>
           </div>
 
           <div class="input-section">
@@ -499,7 +500,7 @@
 <div class="setup-overlay" id="setup-overlay" style="display:none;">
   <div class="setup-modal">
     <h2>Welcome to PromptForge</h2>
-    <p>Enter your OpenRouter API key to reduce load on the shared key. Your key is stored locally and never sent anywhere except to OpenRouter.</p>
+    <p>Enter your OpenRouter API key. Your key is stored in your browser's local storage — only use this app on trusted devices. It's sent directly to OpenRouter and never shared elsewhere.</p>
     <input type="password" id="setup-key-input" placeholder="sk-or-v1-..." autofocus />
     <button class="btn btn-primary" onclick="saveSetupKey()">Save My Key</button>
     <a class="skip-link" onclick="dismissSetup()">Use shared key instead</a>
@@ -509,11 +510,8 @@
 <script>
 // ─── API KEY ───────────────────────────────────────────────────────────────
 
-const HARDCODED_KEY = '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';
-
 function getApiKey() {
-  const stored = localStorage.getItem('promptforge_api_key');
-  return stored || HARDCODED_KEY || '';
+  return localStorage.getItem('promptforge_api_key') || '';
 }
 
 function saveSetupKey() {
@@ -706,6 +704,9 @@ function importHistory(e) {
     try {
       const data = JSON.parse(reader.result);
       if (!Array.isArray(data)) throw new Error('Invalid format');
+      data.forEach(h => {
+        if (sanitizeId(h.id) !== h.id) h.id = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2);
+      });
       const existing = getHistory();
       const merged = [...data, ...existing];
       saveHistory(merged);
@@ -1179,20 +1180,21 @@ function renderHistory() {
     const ago = timeAgo(h.createdAt);
     const goalLabel = h.goal.charAt(0).toUpperCase() + h.goal.slice(1);
     const rawPreview = h.rawPrompt.length > 70 ? h.rawPrompt.substring(0, 70) + '…' : h.rawPrompt;
-    return `<div class="history-item" onclick="loadHistoryItem('${h.id}')">
+    const sid = sanitizeId(h.id);
+    return `<div class="history-item" onclick="loadHistoryItem('${sid}')">
       <div class="history-item-header">
         <div class="history-item-left">
           <div class="history-reorder">
-            <button onclick="event.stopPropagation();moveHistoryItem('${h.id}', -1)" title="Move up">▲</button>
-            <button onclick="event.stopPropagation();moveHistoryItem('${h.id}', 1)" title="Move down">▼</button>
+            <button onclick="event.stopPropagation();moveHistoryItem('${sid}', -1)" title="Move up">▲</button>
+            <button onclick="event.stopPropagation();moveHistoryItem('${sid}', 1)" title="Move down">▼</button>
           </div>
           <span class="history-goal ${h.goal}">${goalLabel}</span>
         </div>
         <div class="history-actions">
-          <button class="btn-icon" onclick="event.stopPropagation();toggleStar('${h.id}')" title="${h.starred ? 'Unstar' : 'Star'}" style="padding:4px;min-width:auto;min-height:auto;">
+          <button class="btn-icon" onclick="event.stopPropagation();toggleStar('${sid}')" title="${h.starred ? 'Unstar' : 'Star'}" style="padding:4px;min-width:auto;min-height:auto;">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="${h.starred ? 'var(--accent)' : 'none'}" stroke="${h.starred ? 'var(--accent)' : 'currentColor'}" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
           </button>
-          <button class="btn-icon" onclick="event.stopPropagation();deleteHistoryItem('${h.id}')" title="Delete" style="padding:4px;min-width:auto;min-height:auto;">
+          <button class="btn-icon" onclick="event.stopPropagation();deleteHistoryItem('${sid}')" title="Delete" style="padding:4px;min-width:auto;min-height:auto;">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
           </button>
         </div>
@@ -1235,6 +1237,10 @@ function escapeHtml(text) {
   const d = document.createElement('div');
   d.textContent = text;
   return d.innerHTML;
+}
+
+function sanitizeId(id) {
+  return typeof id === 'string' ? id.replace(/[^A-Za-z0-9._-]/g, '') : '';
 }
 
 // ─── CUSTOM TEMPLATES ──────────────────────────────────────────────────────
@@ -1317,7 +1323,7 @@ function renderCustomTemplates() {
     </div>
     <div class="template-grid" style="margin-bottom:var(--gap-2xl);">
       ${templates.map(t => `
-        <div class="template-card" onclick="loadCustomTemplate('${t.id}')">
+        <div class="template-card" onclick="loadCustomTemplate('${sanitizeId(t.id)}')">
           <span class="history-goal ${t.goal}">${t.goal.charAt(0).toUpperCase() + t.goal.slice(1)}</span>
           <div class="template-name">${escapeHtml(t.name)}</div>
           <div class="template-desc" style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
@@ -1352,7 +1358,7 @@ function renderSidebarTemplates() {
   if (filteredCustoms.length > 0) {
     html += `<div style="padding:var(--gap-sm) var(--gap-lg) var(--gap-xs);font-size:var(--fs-xs);color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;font-weight:500;">My Templates (${filteredCustoms.length})</div>`;
     html += filteredCustoms.map(t => `
-      <div class="sidebar-template-item" onclick="loadCustomTemplate('${t.id}')">
+      <div class="sidebar-template-item" onclick="loadCustomTemplate('${sanitizeId(t.id)}')">
         <div style="display:flex;align-items:center;gap:var(--gap-sm);margin-bottom:2px;">
           <span class="history-goal ${t.goal}">${t.goal.charAt(0).toUpperCase() + t.goal.slice(1)}</span>
           <span style="font-size:var(--fs-xs);color:var(--muted);">${new Date(t.createdAt).toLocaleDateString()}</span>
@@ -1727,7 +1733,7 @@ function showToast(msg, type) {
   } else if (type === 'error') {
     toast.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>${msg}`;
   } else {
-    toast.innerHTML = msg;
+    toast.textContent = msg;
   }
   container.appendChild(toast);
   setTimeout(() => { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 2200);
