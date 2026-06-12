@@ -553,20 +553,9 @@ function saveApiKey() {
 
 const IS_LOCAL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 const OR_URL = IS_LOCAL ? '/api/chat' : 'https://openrouter.ai/api/v1/chat/completions';
-const CURATED_MODELS = {
-  'Low-Tier': [
-    { id: 'google/gemma-4-31b-it:free', label: 'Gemma 4 31B (free)', pricing: { prompt: 0, completion: 0 } },
-    { id: 'meta-llama/llama-3.1-8b-instruct', label: 'Llama 3.1 8B', pricing: { prompt: 0.058, completion: 0.058 } }
-  ],
-  'Mid-Tier': [
-    { id: 'openai/gpt-4o-mini', label: 'GPT-4o Mini', pricing: { prompt: 0.15, completion: 0.60 } },
-    { id: 'deepseek/deepseek-chat', label: 'DeepSeek V3', pricing: { prompt: 0.078, completion: 0.31 } }
-  ],
-  'High-Tier': [
-    { id: 'openai/gpt-4o', label: 'GPT-4o', pricing: { prompt: 2.50, completion: 10.00 } },
-    { id: 'anthropic/claude-3.5-sonnet', label: 'Claude 3.5 Sonnet', pricing: { prompt: 3.00, completion: 15.00 } }
-  ]
-};
+const CURATED_MODELS = [
+  { id: 'google/gemma-4-31b-it:free', label: 'Gemma 4 31B (free)', pricing: { prompt: 0, completion: 0 } }
+];
 
 const FORMATS = {
   rtcf: { label: 'RTCF',
@@ -592,12 +581,8 @@ const FORMATS = {
 function getFmt() { return FORMATS[document.getElementById('format-select').value] || FORMATS.rtcf; }
 
 function getModelPricing(modelId) {
-  if (modelId === 'google/gemma-4-31b-it:free' || modelId === 'google/gemma-3-12b-it') return { prompt: 0, completion: 0 };
-  for (const t in CURATED_MODELS) {
-    const m = CURATED_MODELS[t].find(x => x.id === modelId);
-    if (m) return m.pricing;
-  }
-  return null;
+  const m = CURATED_MODELS.find(x => x.id === modelId);
+  return m ? m.pricing : null;
 }
 
 function estimateCost(inputChars, maxTok) {
@@ -612,26 +597,13 @@ function estimateCost(inputChars, maxTok) {
 
 function populateModelSelect() {
   const s = document.getElementById('model-select');
-  const currentVal = s.value;
-  const hasPersonalKey = !!localStorage.getItem('promptforge_api_key');
-  if (!hasPersonalKey) {
-    s.innerHTML = '<option value="" disabled selected>Enter your API key to forge</option>';
-    s.disabled = true;
-    return;
-  }
   s.disabled = false;
+  const m = CURATED_MODELS[0];
   s.innerHTML = '';
-  Object.entries(CURATED_MODELS).forEach(([tier, models]) => {
-    const g = document.createElement('optgroup');
-    g.label = tier;
-    models.forEach(m => {
-      const o = document.createElement('option');
-      o.value = m.id; o.textContent = m.label;
-      if (m.id === currentVal || (!currentVal && m.id === 'google/gemma-4-31b-it:free')) o.selected = true;
-      g.appendChild(o);
-    });
-    s.appendChild(g);
-  });
+  const o = document.createElement('option');
+  o.value = m.id; o.textContent = m.label;
+  o.selected = true;
+  s.appendChild(o);
 }
 
 function renderOutputGrid() {
