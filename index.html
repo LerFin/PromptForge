@@ -365,7 +365,7 @@
                 </div>
               </div>
               <div class="controls-row-bottom">
-                <div class="control-group" style="flex:1.2;min-width:120px;">
+                <div class="control-group">
                   <label>Model</label>
                   <select id="model-select">
                     <option value="google/gemma-4-31b-it:free">Gemma 4 31B (free)</option>
@@ -746,7 +746,7 @@ function restoreSession() {
     if (data.g) document.getElementById('goal-select').value = data.g;
     if (data.t) document.getElementById('tone-select').value = data.t;
     if (data.c) document.getElementById('complexity-slider').value = data.c;
-    if (data.m && !document.getElementById('model-select').disabled) {
+    if (data.m) {
       document.getElementById('model-select').value = data.m;
     }
     if (data.f && FORMATS[data.f]) document.getElementById('format-select').value = data.f;
@@ -1301,7 +1301,7 @@ function renderCustomTemplates() {
           <div class="template-name">${escapeHtml(t.name)}</div>
           <div class="template-desc" style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
             <span>${new Date(t.createdAt).toLocaleDateString()}</span>
-            <button class="btn-icon" onclick="event.stopPropagation();deleteCustomTemplate('${t.id}')" style="padding:2px;min-width:auto;min-height:auto;">
+            <button class="btn-icon" onclick="event.stopPropagation();deleteCustomTemplate('${sanitizeId(t.id)}')" style="padding:2px;min-width:auto;min-height:auto;">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
             </button>
           </div>
@@ -1682,9 +1682,9 @@ function toggleSidebar() {
 function closeSidebar() {
   const s = document.getElementById('sidebar');
   s.classList.remove('open');
+  s.classList.add('collapsed');
   document.getElementById('sidebar-overlay').classList.remove('open');
   document.body.style.overflow = '';
-  // On desktop, collapsing the sidebar via hamburger is intentional, so the X button should not collapse on desktop
 }
 
 function resetForge() {
