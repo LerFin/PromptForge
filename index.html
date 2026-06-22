@@ -87,7 +87,7 @@
     .animate-in-3 { animation-delay: 0.10s; }
     .animate-in-4 { animation-delay: 0.14s; }
     .pop-in-spring { animation: popInSpring 0.5s var(--ease-bounce) both; }
-    .reveal { animation: fadeSlideUp 0.4s var(--ease-out-spring) both; }
+    .reveal { animation: fadeSlideUp 0.4s var(--ease-out-spring) both; animation-play-state: paused; }
 
     .input-section { margin-bottom: var(--gap-lg); position: relative; }
     .input-section textarea { width: 100%; min-height: 110px; height: 110px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--gap-lg) var(--gap-lg) 28px; color: var(--fg); font-size: var(--fs-base); resize: none; line-height: 1.6; outline: none; transition: border-color 0.15s, box-shadow 0.15s; overflow-y: auto; }
@@ -2168,9 +2168,11 @@ function loadTemplate(name, goal) {
 document.getElementById('raw-prompt').addEventListener('input', () => {
   autoResize(document.getElementById('raw-prompt'));
   updatePromptCounter();
-  localStorage.setItem('promptforge_draft', document.getElementById('raw-prompt').value);
+  const ta = document.getElementById('raw-prompt');
+  localStorage.setItem('promptforge_draft', ta.value);
+  if (_varPreview) ta.dataset.rawVars = ta.value;
   detectVariables();
-  document.getElementById('enhance-btn').style.display = document.getElementById('raw-prompt').value.trim() ? '' : 'none';
+  document.getElementById('enhance-btn').style.display = ta.value.trim() ? '' : 'none';
 });
 
 // Session auto-save on control changes
