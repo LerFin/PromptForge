@@ -111,6 +111,9 @@
     .view-transition.fade-out { opacity: 0; transform: translateY(6px); }
 
     .slider-group { flex: 1.5; min-width: 160px; }
+    .customize-icon { font-size: 10px; cursor: pointer; color: var(--muted); margin-left: 4px; opacity: 0; transition: opacity 0.12s; }
+    .control-group:hover .customize-icon { opacity: 1; }
+    .customize-icon:hover { color: var(--accent); }
     .slider-row { display: flex; align-items: center; gap: var(--gap-sm); }
     .slider-row input[type="range"] { flex: 1; height: 4px; -webkit-appearance: none; appearance: none; background: var(--border); border-radius: 2px; outline: none; transition: background 0.2s; }
     .slider-row input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--accent); cursor: pointer; border: 2px solid var(--bg); transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s; }
@@ -253,6 +256,9 @@
     .history-goal.research { background: color-mix(in oklch, var(--accent) 14%, transparent); color: var(--accent); }
     .history-goal.creative { background: color-mix(in oklch, var(--purple) 14%, transparent); color: var(--purple); }
     .history-goal.automation { background: color-mix(in oklch, var(--muted) 14%, transparent); color: var(--muted); }
+    .history-goal.learning { background: color-mix(in oklch, var(--blue) 14%, transparent); color: var(--blue); }
+    .history-goal.analysis { background: color-mix(in oklch, var(--purple) 14%, transparent); color: var(--purple); }
+    .history-goal.summarization { background: color-mix(in oklch, var(--orange) 14%, transparent); color: var(--orange); }
     .history-raw { font-size: var(--fs-sm); color: var(--fg-secondary); margin-top: var(--gap-xs); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
     .history-meta-row { display: flex; align-items: center; justify-content: space-between; margin-top: var(--gap-xs); }
     .history-time { font-size: var(--fs-xs); color: var(--muted); }
@@ -379,26 +385,13 @@
             <div id="variables-bar"></div>
             <div class="controls-row">
               <div class="controls-row-top">
-                <div class="control-group">
-                  <label>Goal</label>
-                  <select id="goal-select">
-                    <option value="coding">Coding</option>
-                    <option value="writing">Writing</option>
-                    <option value="business">Business</option>
-                    <option value="research">Research</option>
-                    <option value="creative">Creative</option>
-                    <option value="automation">Automation</option>
-                  </select>
+                <div class="control-group" style="position:relative;">
+                  <label>Goal <span class="customize-icon" onclick="customizeOptions('goal')" title="Customize goals">✎</span></label>
+                  <select id="goal-select"></select>
                 </div>
-                <div class="control-group">
-                  <label>Tone</label>
-                  <select id="tone-select">
-                    <option value="professional">Professional</option>
-                    <option value="aggressive">Aggressive</option>
-                    <option value="casual">Casual</option>
-                    <option value="technical">Technical</option>
-                    <option value="persuasive">Persuasive</option>
-                  </select>
+                <div class="control-group" style="position:relative;">
+                  <label>Tone <span class="customize-icon" onclick="customizeOptions('tone')" title="Customize tones">✎</span></label>
+                  <select id="tone-select"></select>
                 </div>
                 <div class="control-group">
                   <label>Format</label>
@@ -406,6 +399,8 @@
                     <option value="rtcf">RTCF</option>
                     <option value="costar">CO-STAR</option>
                     <option value="roses">ROSES</option>
+                    <option value="tag">TAG</option>
+                    <option value="facts">FACTS</option>
                   </select>
                 </div>
               </div>
@@ -567,6 +562,19 @@
   </div>
 </div>
 
+<div class="setup-overlay" id="customize-overlay" style="display:none;">
+  <div class="setup-modal" style="max-width:460px;">
+    <h2>Customize Options</h2>
+    <p style="margin-bottom:var(--gap-md);">Add your own goals and tones. One per line.</p>
+    <label style="font-size:var(--fs-xs);color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;font-weight:500;display:block;text-align:left;margin-bottom:4px;">Custom Goals</label>
+    <textarea id="custom-goals-input" style="width:100%;min-height:60px;background:var(--surface-raised);border:1px solid var(--border);border-radius:var(--radius);padding:8px;color:var(--fg);font-size:var(--fs-sm);resize:vertical;outline:none;margin-bottom:var(--gap-md);line-height:1.5;font-family:var(--font-mono);" placeholder="e.g.&#10;translation&#10;planning"></textarea>
+    <label style="font-size:var(--fs-xs);color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;font-weight:500;display:block;text-align:left;margin-bottom:4px;">Custom Tones</label>
+    <textarea id="custom-tones-input" style="width:100%;min-height:60px;background:var(--surface-raised);border:1px solid var(--border);border-radius:var(--radius);padding:8px;color:var(--fg);font-size:var(--fs-sm);resize:vertical;outline:none;margin-bottom:var(--gap-md);line-height:1.5;font-family:var(--font-mono);" placeholder="e.g.&#10;minimalist&#10;authoritative"></textarea>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="saveCustomOptions()">Save</button>
+    <a class="skip-link" onclick="document.getElementById('customize-overlay').style.display='none'">Cancel</a>
+  </div>
+</div>
+
 <script>
 // ─── API KEY ───────────────────────────────────────────────────────────────
 
@@ -635,6 +643,18 @@ const FORMATS = {
     labels: { role: 'Role', objective: 'Objective', style: 'Style', examples: 'Examples', sensibility: 'Sensibility' },
     colors: { role: 'blue', objective: 'orange', style: 'green', examples: 'accent', sensibility: 'purple' },
     promptSuffix: 'Return ONLY valid JSON with exactly these 5 keys: role, objective, style, examples, sensibility. Every key MUST be present and filled with detailed content. Never leave any key empty. Do NOT include any text before or after the JSON.'
+  },
+  tag: { label: 'TAG',
+    sections: ['task', 'action', 'goal'],
+    labels: { task: 'Task', action: 'Action', goal: 'Goal' },
+    colors: { task: 'blue', action: 'orange', goal: 'accent' },
+    promptSuffix: 'Return ONLY valid JSON with exactly these 3 keys: task, action, goal. Every key MUST be present and filled with detailed content. Never leave any key empty. Do NOT include any text before or after the JSON.'
+  },
+  facts: { label: 'FACTS',
+    sections: ['framework', 'application', 'context', 'task', 'solution'],
+    labels: { framework: 'Framework', application: 'Application', context: 'Context', task: 'Task', solution: 'Solution' },
+    colors: { framework: 'purple', application: 'accent', context: 'blue', task: 'orange', solution: 'green' },
+    promptSuffix: 'Return ONLY valid JSON with exactly these 5 keys: framework, application, context, task, solution. Every key MUST be present and filled with detailed content. Never leave any key empty. Do NOT include any text before or after the JSON.'
   }
 };
 
@@ -829,7 +849,7 @@ Goal: ${goal}
 Tone: ${tone}
 Complexity (1-10): ${cplx}
 ${cplx <= 3 ? 'Keep the output concise and focused. Short paragraphs, no fluff.' : cplx >= 7 ? 'Be extremely thorough. Include edge cases, examples, detailed structure, constraints, success criteria, and potential pitfalls. Make every section rich and specific.' : 'Provide a balanced level of detail. Cover the key points thoroughly but avoid unnecessary digressions.'}
-${tone === 'technical' ? 'Use precise technical language. Assume domain expertise.' : tone === 'persuasive' ? 'Use compelling, benefit-driven language.' : tone === 'casual' ? 'Use conversational, friendly language.' : tone === 'aggressive' ? 'Use direct, assertive language.' : 'Use professional, polished language.'}
+${tone === 'technical' ? 'Use precise technical language. Assume domain expertise.' : tone === 'persuasive' ? 'Use compelling, benefit-driven language.' : tone === 'casual' ? 'Use conversational, friendly language.' : tone === 'aggressive' ? 'Use direct, assertive language.' : tone === 'empathetic' ? 'Use warm, compassionate language that shows understanding.' : tone === 'witty' ? 'Use clever, humorous language with sharp observations.' : tone === 'inspirational' ? 'Use uplifting, motivational language that inspires action.' : tone === 'academic' ? 'Use scholarly, evidence-based language with formal structure.' : 'Use professional, polished language.'}
 
 ${fmt.promptSuffix}`;
 
@@ -1804,24 +1824,71 @@ async function runABTest() {
   btn.classList.remove('loading');
 }
 
+// ─── CUSTOM OPTIONS ─────────────────────────────────────────────────────────
+
+const BUILTIN_GOALS = ['coding', 'writing', 'business', 'research', 'creative', 'automation', 'learning', 'analysis', 'summarization'];
+const BUILTIN_TONES = ['professional', 'aggressive', 'casual', 'technical', 'persuasive', 'empathetic', 'witty', 'inspirational', 'academic'];
+
+function getCustomOptions(type) {
+  try { return JSON.parse(localStorage.getItem('promptforge_custom_' + type) || '[]'); } catch { return []; }
+}
+
+function saveCustomOptions() {
+  const goals = document.getElementById('custom-goals-input').value.trim().split('\n').map(s => s.trim().toLowerCase().replace(/\s+/g, '_')).filter(Boolean);
+  const tones = document.getElementById('custom-tones-input').value.trim().split('\n').map(s => s.trim().toLowerCase().replace(/\s+/g, '_')).filter(Boolean);
+  try { localStorage.setItem('promptforge_custom_goals', JSON.stringify(goals)); } catch {}
+  try { localStorage.setItem('promptforge_custom_tones', JSON.stringify(tones)); } catch {}
+  document.getElementById('customize-overlay').style.display = 'none';
+  populateControls();
+  showToast('Custom options saved', 'success');
+}
+
+function populateControls() {
+  const goalSelect = document.getElementById('goal-select');
+  const toneSelect = document.getElementById('tone-select');
+  const currentGoal = goalSelect.value;
+  const currentTone = toneSelect.value;
+  const customGoals = getCustomOptions('goals');
+  const customTones = getCustomOptions('tones');
+  goalSelect.innerHTML = [...BUILTIN_GOALS, ...customGoals].map(g => `<option value="${g}">${g.charAt(0).toUpperCase() + g.slice(1)}</option>`).join('');
+  toneSelect.innerHTML = [...BUILTIN_TONES, ...customTones].map(t => `<option value="${t}">${t.charAt(0).toUpperCase() + t.slice(1)}</option>`).join('');
+  if ([...BUILTIN_GOALS, ...customGoals].includes(currentGoal)) goalSelect.value = currentGoal;
+  if ([...BUILTIN_TONES, ...customTones].includes(currentTone)) toneSelect.value = currentTone;
+}
+
+function customizeOptions(type) {
+  const overlay = document.getElementById('customize-overlay');
+  const goalsTextarea = document.getElementById('custom-goals-input');
+  const tonesTextarea = document.getElementById('custom-tones-input');
+  if (type === 'goal') {
+    goalsTextarea.value = getCustomOptions('goals').join('\n');
+    tonesTextarea.value = getCustomOptions('tones').join('\n');
+  } else {
+    goalsTextarea.value = getCustomOptions('goals').join('\n');
+    tonesTextarea.value = getCustomOptions('tones').join('\n');
+  }
+  overlay.style.display = 'flex';
+  goalsTextarea.focus();
+}
+
 // ─── TEMPLATE LIBRARY ──────────────────────────────────────────────────────
 
 const TEMPLATE_LIBRARY = [
-  { name: "Write a landing page", goal: "writing", desc: "High-converting landing page with headline, benefits, and CTA" },
-  { name: "Debug this code", goal: "coding", desc: "Analyze code, identify bugs, and provide a fixed implementation" },
-  { name: "Research a market", goal: "research", desc: "Competitive analysis, market sizing, and opportunity assessment" },
-  { name: "Write a Twitter thread", goal: "writing", desc: "Engaging thread with hook, numbered points, and strong ending" },
-  { name: "Build a Chrome extension", goal: "coding", desc: "Browser extension with manifest, popup, and core logic" },
-  { name: "Analyze spreadsheet data", goal: "automation", desc: "Process, clean, and extract insights from tabular data" },
-  { name: "Draft a business proposal", goal: "business", desc: "Persuasive proposal with executive summary, scope, and pricing" },
-  { name: "Write a blog post", goal: "writing", desc: "SEO-optimized blog post with outline, sections, and conclusion" },
-  { name: "Design a REST API", goal: "coding", desc: "RESTful API with endpoints, schemas, and examples" },
-  { name: "Create a marketing email", goal: "business", desc: "Marketing email with subject line, body, and call-to-action" },
-  { name: "Write a PRD", goal: "business", desc: "Product requirements doc with problem statement and success metrics" },
-  { name: "Brainstorm creative ideas", goal: "creative", desc: "Innovative concepts around a theme with variations and rationale" },
-  { name: "Plan a project", goal: "automation", desc: "Project plan with phases, milestones, dependencies, and timeline" },
-  { name: "Analyze customer feedback", goal: "research", desc: "Extract themes, sentiment, and insights from feedback" },
-  { name: "Write documentation", goal: "writing", desc: "User-friendly documentation with examples and troubleshooting" }
+  { name: "Build a full-stack web app", goal: "coding", desc: "Architecture, stack choice, data flow, auth, and deployment" },
+  { name: "Explain quantum computing simply", goal: "learning", desc: "Break down complex concepts for a beginner audience" },
+  { name: "Create a viral LinkedIn post", goal: "writing", desc: "Hook-driven personal story with professional insight and CTA" },
+  { name: "Analyze competitor positioning", goal: "analysis", desc: "Feature comparison, market gaps, pricing analysis, and strategy" },
+  { name: "Summarize a research paper", goal: "summarization", desc: "Extract thesis, methodology, findings, and implications" },
+  { name: "Design a microservices architecture", goal: "coding", desc: "Service boundaries, communication patterns, data consistency" },
+  { name: "Write a pitch deck narrative", goal: "business", desc: "Problem, solution, market size, traction, and ask" },
+  { name: "Debug a production incident", goal: "automation", desc: "Root cause analysis, timeline, fix, and monitoring improvements" },
+  { name: "Generate startup idea validation", goal: "creative", desc: "Problem hypothesis, solution sketch, market test, and risks" },
+  { name: "Create a learning curriculum", goal: "learning", desc: "Prerequisites, module outline, projects, and assessment" },
+  { name: "Analyze survey data", goal: "analysis", desc: "Statistical methods, sentiment analysis, key findings, visualizations" },
+  { name: "Write a product launch email", goal: "business", desc: "Subject line, teaser, feature highlights, urgency, and CTA" },
+  { name: "Build a data pipeline", goal: "automation", desc: "Extract, transform, load — with scheduling, error handling, and monitoring" },
+  { name: "Summarize meeting notes", goal: "summarization", desc: "Key decisions, action items, owners, and deadlines" },
+  { name: "Brainstorm content strategy", goal: "creative", desc: "Content pillars, formats, distribution channels, and KPIs" }
 ];
 
 // ─── CONTEXT PRESETS ───────────────────────────────────────────────────────
@@ -2214,6 +2281,7 @@ window.addEventListener('hashchange', restoreFromHash);
   // Try to restore shared forge from URL hash
   restoreFromHash();
 
+  populateControls();
   renderHistory();
   renderTemplates();
   renderCustomTemplates();
