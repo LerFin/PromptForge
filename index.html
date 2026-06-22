@@ -405,6 +405,7 @@
                     <option value="tag">TAG</option>
                     <option value="facts">FACTS</option>
                   </select>
+                  <div id="format-desc" style="font-size:10px;color:var(--muted);line-height:1.4;margin-top:2px;min-height:14px;"></div>
                 </div>
               </div>
               <div class="controls-row-bottom">
@@ -649,30 +650,35 @@ const FORMATS = {
     sections: ['role', 'task', 'context', 'format'],
     labels: { role: 'Role', task: 'Task', context: 'Context', format: 'Format' },
     colors: { role: 'blue', task: 'orange', context: 'green', format: 'accent' },
+    desc: 'General-purpose — defines who the AI is, what to do, background info, and output structure. Best for most tasks.',
     promptSuffix: 'Return ONLY valid JSON with exactly these 4 keys: role, task, context, format. Every key MUST be present and filled with detailed content. Never leave any key empty. Do NOT include any text before or after the JSON.'
   },
   costar: { label: 'CO-STAR',
     sections: ['context', 'objective', 'style', 'tone', 'audience', 'response'],
     labels: { context: 'Context', objective: 'Objective', style: 'Style', tone: 'Tone', audience: 'Audience', response: 'Response' },
     colors: { context: 'blue', objective: 'orange', style: 'green', tone: 'accent', audience: 'purple', response: 'muted' },
+    desc: 'Persuasive & creative — adds tone, audience, and style guidance. Best for marketing, writing, and communication.',
     promptSuffix: 'Return ONLY valid JSON with exactly these 6 keys: context, objective, style, tone, audience, response. Every key MUST be present and filled with detailed content. Never leave any key empty. Do NOT include any text before or after the JSON.'
   },
   roses: { label: 'ROSES',
     sections: ['role', 'objective', 'style', 'examples', 'sensibility'],
     labels: { role: 'Role', objective: 'Objective', style: 'Style', examples: 'Examples', sensibility: 'Sensibility' },
     colors: { role: 'blue', objective: 'orange', style: 'green', examples: 'accent', sensibility: 'purple' },
+    desc: 'Creative & nuanced — emphasizes role, style, and examples. Best for content creation and creative briefs.',
     promptSuffix: 'Return ONLY valid JSON with exactly these 5 keys: role, objective, style, examples, sensibility. Every key MUST be present and filled with detailed content. Never leave any key empty. Do NOT include any text before or after the JSON.'
   },
   tag: { label: 'TAG',
     sections: ['task', 'action', 'goal'],
     labels: { task: 'Task', action: 'Action', goal: 'Goal' },
     colors: { task: 'blue', action: 'orange', goal: 'accent' },
+    desc: 'Simple & direct — focused on what to do, how to do it, and why. Best for quick instructions and automation.',
     promptSuffix: 'Return ONLY valid JSON with exactly these 3 keys: task, action, goal. Every key MUST be present and filled with detailed content. Never leave any key empty. Do NOT include any text before or after the JSON.'
   },
   facts: { label: 'FACTS',
     sections: ['framework', 'application', 'context', 'task', 'solution'],
     labels: { framework: 'Framework', application: 'Application', context: 'Context', task: 'Task', solution: 'Solution' },
     colors: { framework: 'purple', application: 'accent', context: 'blue', task: 'orange', solution: 'green' },
+    desc: 'Structured problem-solving — defines approach, use case, background, action, and resolution. Best for analysis and troubleshooting.',
     promptSuffix: 'Return ONLY valid JSON with exactly these 5 keys: framework, application, context, task, solution. Every key MUST be present and filled with detailed content. Never leave any key empty. Do NOT include any text before or after the JSON.'
   }
 };
@@ -2436,9 +2442,16 @@ document.getElementById('raw-prompt').addEventListener('input', () => {
 document.getElementById('complexity-slider').addEventListener('input', saveSession);
 
 // Format change → re-render output grid
+function updateFormatDesc() {
+  const fmt = getFmt();
+  const el = document.getElementById('format-desc');
+  if (el && fmt.desc) el.textContent = fmt.desc;
+}
+
 document.getElementById('format-select').addEventListener('change', () => {
   renderOutputGrid();
   document.getElementById('output-section').classList.remove('visible');
+  updateFormatDesc();
 });
 
 // Hash URL sharing on load
@@ -2490,6 +2503,7 @@ window.addEventListener('hashchange', restoreFromHash);
   autoResize(document.getElementById('raw-prompt'));
   updatePromptCounter();
   initScrollReveal();
+  updateFormatDesc();
 
   // PWA Service Worker registration
   if ('serviceWorker' in navigator) {
