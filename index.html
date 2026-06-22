@@ -12,16 +12,20 @@
       --bg: #141413; --surface: #1c1c1a; --surface-raised: #2a2a27; --surface-card: #22221f;
       --fg: #faf9f5; --fg-secondary: #a8a69e; --muted: #87867f; --border: #2a2a27; --border-light: #353532;
       --accent: #17a34a; --accent-soft: color-mix(in oklch, #17a34a 12%, transparent); --accent-hover: #1fc75a;
-      --green: #17a34a; --red: #b53333; --orange: #d97757; --blue: #3898ec; --purple: #a855f7;
+      --red: #b53333; --orange: #d97757; --blue: #3898ec; --purple: #a855f7;
       --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
       --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
       --fs-xs: 11px; --fs-sm: 13px; --fs-base: 14px; --fs-lg: 16px; --fs-xl: 20px; --fs-2xl: 24px; --fs-3xl: 32px;
       --gap-xs: 4px; --gap-sm: 8px; --gap-md: 12px; --gap-lg: 16px; --gap-xl: 24px; --gap-2xl: 32px;
       --radius: 8px; --radius-lg: 12px; --sidebar-width: 320px; --topbar-h: 52px;
+      --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+      --ease-bounce: cubic-bezier(0.68, -0.55, 0.27, 1.55);
+      --ease-out-spring: cubic-bezier(0.22, 1, 0.36, 1);
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { -webkit-text-size-adjust: 100%; height: 100%; }
     body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: var(--fs-base); line-height: 1.5; -webkit-font-smoothing: antialiased; height: 100%; overflow: hidden; }
+    ::selection { background: color-mix(in oklch, var(--accent) 30%, transparent); color: var(--fg); }
     input, textarea, select, button { font-family: inherit; }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
@@ -53,22 +57,37 @@
     .font-size-control input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 10px; height: 10px; border-radius: 50%; background: var(--muted); cursor: pointer; border: none; }
     .pill { font-size: var(--fs-xs); color: var(--accent); font-weight: 500; background: var(--accent-soft); padding: 2px 10px; border-radius: 100px; letter-spacing: 0.02em; }
 
-    .content { flex: 1; overflow-y: auto; overflow-x: hidden; padding: var(--gap-lg); }
+    .content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
     .content-inner { max-width: 900px; margin: 0 auto; }
+    #forge-view { flex: 1; display: flex; gap: var(--gap-lg); overflow: hidden; min-height: 0; padding: var(--gap-lg); }
+    .forge-panel-input { width: 420px; min-width: 0; overflow-y: auto; flex-shrink: 0; }
+    .forge-panel-output { flex: 1; min-width: 0; overflow-y: auto; }
+    #templates-view { overflow-y: auto; padding: var(--gap-lg); flex: 1; }
+    @media (max-width: 768px) {
+      #forge-view { flex-direction: column; padding: var(--gap-md); }
+      .forge-panel-input { width: 100%; }
+    }
 
     @keyframes slideInBar { from { transform: scaleX(0); } to { transform: scaleX(1); } }
     @keyframes fadeSlideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     @keyframes spin { to { transform: rotate(360deg); } }
-    @keyframes slideInToast { from { opacity: 0; transform: translateY(12px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
-    @keyframes slideOutToast { from { opacity: 1; } to { opacity: 0; transform: translateY(-8px); } }
+    @keyframes slideInToast { from { opacity: 0; transform: translateX(40px) scale(0.9); } 60% { transform: translateX(-4px) scale(1.02); } to { opacity: 1; transform: translateX(0) scale(1); } }
+    @keyframes slideOutToast { from { opacity: 1; transform: translateX(0) scale(1); } to { opacity: 0; transform: translateX(40px) scale(0.9); } }
+    @keyframes toastProgress { from { width: 100%; } to { width: 0%; } }
     @keyframes shimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
     @keyframes popIn { 0% { opacity: 0; transform: scale(0.92) translateY(8px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
+    @keyframes popInSpring { 0% { opacity: 0; transform: scale(0.85) translateY(12px); } 60% { transform: scale(1.04) translateY(-2px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
+    @keyframes pulseGlow { 0%, 100% { box-shadow: 0 0 0 0 var(--accent-soft); } 50% { box-shadow: 0 0 0 4px var(--accent-soft); } }
+    @keyframes toastProgress { from { width: 100%; } to { width: 0%; } }
+    @keyframes ripple { to { transform: scale(4); opacity: 0; } }
     .animate-in { animation: fadeSlideUp 0.3s ease both; }
     .animate-in-1 { animation-delay: 0.02s; }
     .animate-in-2 { animation-delay: 0.06s; }
     .animate-in-3 { animation-delay: 0.10s; }
     .animate-in-4 { animation-delay: 0.14s; }
+    .pop-in-spring { animation: popInSpring 0.5s var(--ease-bounce) both; }
+    .reveal { animation: fadeSlideUp 0.4s var(--ease-out-spring) both; }
 
     .input-section { margin-bottom: var(--gap-lg); position: relative; }
     .input-section textarea { width: 100%; min-height: 110px; height: 110px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--gap-lg) var(--gap-lg) 28px; color: var(--fg); font-size: var(--fs-base); resize: none; line-height: 1.6; outline: none; transition: border-color 0.15s, box-shadow 0.15s; overflow-y: auto; }
@@ -82,9 +101,19 @@
     .controls-row-bottom { display: flex; gap: var(--gap-md); flex-wrap: wrap; align-items: end; }
     .control-group { display: flex; flex-direction: column; gap: var(--gap-xs); flex: 1; min-width: 130px; }
     .control-group label { font-size: var(--fs-xs); color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 500; }
-    .control-group select { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 7px 28px 7px 10px; color: var(--fg); font-size: var(--fs-sm); outline: none; cursor: pointer; transition: border-color 0.15s; -webkit-appearance: none; appearance: none; background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%2387867f' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; }
-    .control-group select:focus { border-color: var(--accent); }
+    .control-group select { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 7px 28px 7px 10px; color: var(--fg); font-size: var(--fs-sm); outline: none; cursor: pointer; transition: border-color 0.2s, box-shadow 0.2s; -webkit-appearance: none; appearance: none; background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%2387867f' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; }
+    .control-group select:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
     .smart-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; padding: 2px 8px; border-radius: 100px; background: var(--accent-soft); color: var(--accent); font-weight: 500; margin-top: var(--gap-sm); animation: fadeIn 0.3s ease; }
+    #variables-bar { display: none; margin-top: var(--gap-sm); padding: var(--gap-sm) var(--gap-md); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); gap: var(--gap-xs); flex-wrap: wrap; align-items: center; animation: fadeSlideUp 0.2s var(--ease-out-spring); }
+    #variables-bar.visible { display: flex; }
+    .var-chip { display: inline-flex; align-items: center; gap: 4px; background: var(--surface-raised); border: 1px solid var(--border); border-radius: 100px; padding: 2px 6px 2px 10px; font-size: var(--fs-xs); }
+    .var-chip .var-name { color: var(--accent); font-family: var(--font-mono); font-size: 10px; white-space: nowrap; }
+    .var-chip input { width: 80px; background: transparent; border: none; border-bottom: 1px solid var(--border); color: var(--fg); font-size: 10px; padding: 1px 4px; outline: none; }
+    .var-chip input:focus { border-bottom-color: var(--accent); }
+    .var-chip.filled { border-color: var(--accent); background: var(--accent-soft); }
+    .var-preview-btn { font-size: 10px; padding: 2px 8px; border-radius: 100px; background: transparent; border: 1px solid var(--border); color: var(--muted); cursor: pointer; transition: all 0.12s; white-space: nowrap; }
+    .var-preview-btn:hover { border-color: var(--accent); color: var(--fg); }
+    .var-preview-btn.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
 
     .view-transition { transition: opacity 0.2s ease, transform 0.2s ease; }
     .view-transition.fade-out { opacity: 0; transform: translateY(6px); }
@@ -95,7 +124,11 @@
     .slider-row input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--accent); cursor: pointer; border: 2px solid var(--bg); transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s; }
     .slider-row input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); box-shadow: 0 0 12px rgba(23, 163, 74, 0.4); }
     .slider-row input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: var(--accent); cursor: pointer; border: 2px solid var(--bg); }
-    .forge-btn-wrap { display: flex; align-items: end; gap: var(--gap-sm); }
+    .forge-btn-wrap { display: flex; align-items: center; gap: var(--gap-sm); flex-wrap: wrap; }
+    .batch-toggle { display: inline-flex; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .batch-opt { padding: 6px 10px; font-size: var(--fs-xs); cursor: pointer; color: var(--muted); transition: all 0.12s; user-select: none; }
+    .batch-opt:hover { color: var(--fg); }
+    .batch-opt.active { background: var(--accent); color: #fff; }
     .forge-btn { padding: 8px var(--gap-xl); position: relative; }
     .forge-btn.loading { pointer-events: none; opacity: 0.8; }
     .forge-btn .spinner { display: none; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; }
@@ -120,19 +153,21 @@
     .api-key-banner input:focus { border-color: var(--accent); }
     .api-key-banner .label { font-size: var(--fs-sm); color: var(--fg-secondary); white-space: nowrap; }
 
-    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: var(--radius); border: none; font-size: var(--fs-sm); font-weight: 500; cursor: pointer; transition: all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1); white-space: nowrap; -webkit-tap-highlight-color: transparent; user-select: none; }
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: var(--radius); border: none; font-size: var(--fs-sm); font-weight: 500; cursor: pointer; transition: all 0.15s var(--ease-spring); white-space: nowrap; -webkit-tap-highlight-color: transparent; user-select: none; position: relative; overflow: hidden; }
     .btn:hover { transform: translateY(-1px); }
     .btn:active { transform: scale(0.95) translateY(0); }
-    .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 0 0 0 rgba(23, 163, 74, 0); transition: all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    .ripple { position: absolute; border-radius: 50%; background: rgba(255,255,255,0.3); transform: scale(0); animation: ripple 0.6s ease-out; pointer-events: none; }
+    .btn-primary { background: linear-gradient(135deg, var(--accent), #1fc75a); color: #fff; box-shadow: 0 0 0 0 rgba(23, 163, 74, 0); transition: all 0.15s var(--ease-spring); position: relative; overflow: hidden; }
     .btn-primary:hover { box-shadow: 0 0 20px rgba(23, 163, 74, 0.35); }
-    .btn-secondary:hover { transform: translateY(-1px); }
     .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-    .btn-secondary { background: var(--surface-raised); color: var(--fg); border: 1px solid var(--border); transition: all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1); }
-    .btn-secondary:hover { background: var(--border-light); }
-    .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); transition: all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    .btn-secondary { background: var(--surface-raised); color: var(--fg); border: 1px solid var(--border); transition: all 0.15s var(--ease-spring); }
+    .btn-secondary:hover { transform: translateY(-1px); }
+    .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); transition: all 0.15s var(--ease-spring); }
     .btn-ghost:hover { background: var(--surface-raised); color: var(--fg); }
-    .btn-icon { background: transparent; color: var(--muted); border: none; padding: 6px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: all 0.12s; -webkit-tap-highlight-color: transparent; min-width: 32px; min-height: 32px; }
+    .btn-icon { background: transparent; color: var(--muted); border: none; padding: 6px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: all 0.12s var(--ease-spring); -webkit-tap-highlight-color: transparent; min-width: 32px; min-height: 32px; }
     .btn-icon:hover { background: var(--surface-raised); color: var(--fg); }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; animation: pulseGlow 2s ease infinite; }
+    button:focus-visible { outline-offset: 1px; }
 
     .output-section { display: none; }
     .output-section.visible { display: block; }
@@ -140,7 +175,8 @@
     #reroll-btn.visible { display: inline-flex; }
 
     .rtcf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap-md); animation: fadeSlideUp 0.3s ease; }
-    .rtcf-card { background: var(--surface-card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; transition: border-color 0.2s, box-shadow 0.2s, opacity 0.3s ease; }
+    .rtcf-card { background: var(--surface-card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; transition: border-color 0.2s var(--ease-spring), box-shadow 0.2s var(--ease-spring), transform 0.2s var(--ease-spring), opacity 0.3s ease; }
+    .rtcf-card:not(.collapsed):hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
     .rtcf-card:focus-within { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent-soft); }
     .rtcf-card.loading textarea { background: linear-gradient(90deg, var(--surface-card) 0%, var(--surface-raised) 50%, var(--surface-card) 100%); background-size: 800px 100%; animation: shimmer 1.5s ease infinite; color: transparent; resize: none; }
     .rtcf-card.loading .rtcf-counter { opacity: 0; }
@@ -157,13 +193,24 @@
     .rtcf-card-label.purple { color: var(--purple); }
     .rtcf-card-label.muted { color: var(--muted); }
     .rtcf-card-actions { display: flex; gap: 2px; }
+    .collapse-arrow { transition: transform 0.2s var(--ease-spring); }
+    .collapsed .collapse-arrow { transform: rotate(180deg); }
     .rtcf-card textarea { width: 100%; min-height: 80px; background: transparent; border: none; padding: var(--gap-md); color: var(--fg); font-size: var(--fs-sm); font-family: var(--font-body); line-height: 1.6; resize: none; outline: none; overflow-y: hidden; }
     .rtcf-counter { display: block; text-align: right; padding: 0 var(--gap-md) var(--gap-xs); font-size: 10px; color: var(--muted); font-family: var(--font-mono); pointer-events: none; }
     .actions-row { display: flex; gap: var(--gap-md); flex-wrap: wrap; margin-top: var(--gap-lg); }
+    .batch-comparison { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap-md); margin-top: var(--gap-md); }
+    .batch-result { background: var(--surface-card); border: 2px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; cursor: pointer; transition: all 0.2s var(--ease-spring); }
+    .batch-result:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+    .batch-result.picked { border-color: var(--accent); }
+    .batch-result-header { display: flex; align-items: center; justify-content: space-between; padding: var(--gap-sm) var(--gap-md); background: var(--surface); border-bottom: 1px solid var(--border); font-size: var(--fs-xs); color: var(--muted); }
+    .batch-result-body { padding: var(--gap-md); font-size: var(--output-font-size, 13px); line-height: 1.6; max-height: 400px; overflow-y: auto; }
+    .batch-section { margin-bottom: var(--gap-md); }
+    .batch-section-label { font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; margin-bottom: var(--gap-xs); }
+    @media (max-width: 768px) { .batch-comparison { grid-template-columns: 1fr; } }
 
     .sidebar-overlay { display: none; position: fixed; inset: 0; z-index: 30; background: rgba(0,0,0,0.5); animation: fadeIn 0.2s ease; }
     .sidebar-overlay.open { display: block; }
-    .sidebar { width: var(--sidebar-width); flex-shrink: 0; border-left: 1px solid var(--border); display: flex; flex-direction: column; background: var(--surface); position: relative; z-index: 40; transition: width 0.25s ease, transform 0.25s ease; overflow: hidden; }
+    .sidebar { width: var(--sidebar-width); flex-shrink: 0; border-left: 1px solid var(--border); display: flex; flex-direction: column; background: var(--surface); position: relative; z-index: 40; transition: width 0.3s var(--ease-out-spring), transform 0.3s var(--ease-out-spring); overflow: hidden; }
     .sidebar.collapsed { width: 0; min-width: 0; border-left: none; }
     .sidebar.collapsed .sidebar-header { padding: 0; overflow: hidden; }
     .sidebar.collapsed .sidebar-tabs, .sidebar.collapsed .sidebar-panel, .sidebar.collapsed .stats-bar { display: none; }
@@ -246,11 +293,13 @@
     .setup-modal .skip-link:hover { color: var(--fg-secondary); }
 
     .toast-container { position: fixed; bottom: var(--gap-xl); right: var(--gap-xl); z-index: 999; display: flex; flex-direction: column; gap: var(--gap-sm); pointer-events: none; }
-    .toast { background: var(--surface-raised); border: 1px solid var(--border-light); border-radius: var(--radius); padding: 10px var(--gap-lg); font-size: var(--fs-sm); color: var(--fg); animation: slideInToast 0.25s ease, slideOutToast 0.2s ease 1.8s forwards; box-shadow: 0 4px 24px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 8px; pointer-events: auto; }
+    .toast { background: var(--surface-raised); border: 1px solid var(--border-light); border-radius: var(--radius); padding: 10px var(--gap-lg); font-size: var(--fs-sm); color: var(--fg); animation: slideInToast 0.35s var(--ease-bounce); box-shadow: 0 4px 24px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 8px; pointer-events: auto; position: relative; overflow: hidden; }
     .toast svg { width: 16px; height: 16px; flex-shrink: 0; }
     .toast.success svg { stroke: var(--green); }
     .toast.error { border-color: var(--red); }
     .toast.error svg { stroke: var(--red); }
+    .toast-bar { position: absolute; bottom: 0; left: 0; height: 2px; background: var(--accent); animation: toastProgress 2.4s linear forwards; }
+    .toast.error .toast-bar { background: var(--red); }
 
     .chain-breadcrumb { display: flex; align-items: center; gap: var(--gap-sm); padding: var(--gap-sm) var(--gap-md); background: var(--accent-soft); border-radius: var(--radius); margin-bottom: var(--gap-md); font-size: var(--fs-xs); color: var(--accent); animation: fadeSlideUp 0.2s ease; }
     .chain-breadcrumb span { color: var(--muted); }
@@ -280,6 +329,9 @@
       .topbar-brand span { display: none; }
       .topbar-nav a { font-size: var(--fs-xs); }
     }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+    }
   </style>
 </head>
 <body>
@@ -301,7 +353,7 @@
       </div>
       <div class="topbar-right">
         <span class="kbd-hint"><kbd id="kbd-mod">Ctrl</kbd>+<kbd>Enter</kbd></span>
-        <span class="pill">v1.6</span>
+        <span class="pill">v1.7</span>
         <div class="font-size-control" title="Output font size">
           <span class="font-size-label">A</span>
           <input type="range" id="font-size-slider" min="11" max="18" value="13" oninput="setFontSize(this.value)" />
@@ -318,7 +370,7 @@
 
     <div class="content" id="content">
       <div id="forge-view">
-        <div class="content-inner">
+        <div class="forge-panel-input">
 
           <div class="api-key-banner" id="api-key-banner">
             <span class="label">Enter your OpenRouter API key</span>
@@ -332,6 +384,7 @@
             <textarea id="raw-prompt" placeholder='Paste your raw prompt here… e.g. "write me a blog post about AI"'></textarea>
             <div class="input-counter" id="prompt-counter">0 words · 0 chars</div>
             <div id="smart-badge-area"></div>
+            <div id="variables-bar"></div>
             <div class="controls-row">
               <div class="controls-row-top">
                 <div class="control-group">
@@ -365,20 +418,6 @@
                 </div>
               </div>
               <div class="controls-row-bottom">
-                <div class="control-group">
-                  <label>Model</label>
-                  <select id="model-select">
-                    <option value="google/gemma-4-31b-it:free">Gemma 4 31B (free)</option>
-                  </select>
-                </div>
-                <div class="control-group slider-group" style="flex:2;">
-                  <label>Complexity</label>
-                  <div class="slider-row">
-                    <span style="font-size:var(--fs-xs);color:var(--muted)">Simple</span>
-                    <input type="range" id="complexity-slider" min="1" max="10" value="5" />
-                    <span style="font-size:var(--fs-xs);color:var(--muted)">Elaborate</span>
-                  </div>
-                </div>
                 <div class="forge-btn-wrap">
                   <button class="btn btn-primary forge-btn" onclick="forgePrompt()" id="forge-btn">
                     <span class="spinner"></span>
@@ -387,10 +426,29 @@
                       Forge
                     </span>
                   </button>
+                  <button class="btn btn-secondary" style="display:none" id="enhance-btn" onclick="enhancePrompt()">✨ Enhance</button>
+                  <div class="batch-toggle" id="batch-toggle" title="Generate 2 variations">
+                    <span class="batch-opt active" data-n="1" onclick="setBatchCount(1)">1x</span>
+                    <span class="batch-opt" data-n="2" onclick="setBatchCount(2)">2x</span>
+                  </div>
                   <button class="btn btn-secondary" onclick="forgePrompt()" id="reroll-btn" title="Re-run with the same input" style="display:none;">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6M3 12a9 9 0 0 1 15.36-6.36L21 8M3 22v-6h6M21 12a9 9 0 0 1-15.36 6.36L3 16"/></svg>
                     Re-roll
                   </button>
+                </div>
+                <div class="control-group" style="flex:0 0 auto;min-width:auto;">
+                  <label>Model</label>
+                  <select id="model-select" style="width:auto;">
+                    <option value="google/gemma-4-31b-it:free">Gemma 4 31B (free)</option>
+                  </select>
+                </div>
+                <div class="control-group slider-group" style="flex:1;">
+                  <label>Complexity</label>
+                  <div class="slider-row">
+                    <span style="font-size:var(--fs-xs);color:var(--muted);white-space:nowrap;">Simple</span>
+                    <input type="range" id="complexity-slider" min="1" max="10" value="5" />
+                    <span style="font-size:var(--fs-xs);color:var(--muted);white-space:nowrap;">Elaborate</span>
+                  </div>
                 </div>
               </div>
               <div class="forge-status" id="forge-status"></div>
@@ -415,11 +473,14 @@
               </div>
             </div>
           </div>
+        </div>
 
+        <div class="forge-panel-output">
           <div class="output-section" id="output-section">
             <div id="chain-breadcrumb"></div>
 
             <div class="rtcf-grid" id="rtcf-grid"></div>
+            <div id="batch-comparison"></div>
             <div class="actions-row">
               <button class="btn btn-primary" onclick="copyFullPrompt()" id="copy-btn">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
@@ -471,6 +532,7 @@
       <div class="sidebar-tab active" data-tab="history" onclick="switchSidebarTab('history', this)">History</div>
       <div class="sidebar-tab" data-tab="templates" onclick="switchSidebarTab('templates', this)">Templates</div>
       <div class="sidebar-tab" data-tab="discover" onclick="switchSidebarTab('discover', this)">Discover</div>
+      <div class="sidebar-tab" data-tab="playbooks" onclick="switchSidebarTab('playbooks', this)">Playbooks</div>
     </div>
     <div class="sidebar-panel active" id="panel-history">
       <div class="sidebar-filter-chips" id="history-filter-chips"></div>
@@ -485,6 +547,14 @@
     </div>
     <div class="sidebar-panel" id="panel-discover">
       <div class="sidebar-panel-inner" id="discover-content"></div>
+    </div>
+    <div class="sidebar-panel" id="panel-playbooks">
+      <div class="sidebar-panel-inner" id="playbooks-content">
+        <div style="padding:var(--gap-md) var(--gap-lg);">
+          <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="saveCurrentAsPlaybook()">Save Current as Playbook</button>
+        </div>
+        <div id="playbooks-list"></div>
+      </div>
     </div>
     <div class="stats-bar" id="stats-bar">
       <div class="stat-item">Forged: <span class="num" id="stat-total">0</span></div>
@@ -612,12 +682,12 @@ function renderOutputGrid() {
   grid.innerHTML = fmt.sections.map((s, i) => {
     const label = fmt.labels[s];
     const color = fmt.colors[s];
-    return `<div class="rtcf-card pop-in" style="animation-delay:${i * 0.04}s" data-section="${s}">
+    return `<div class="rtcf-card pop-in-spring" style="animation-delay:${i * 0.06}s" data-section="${s}">
       <div class="rtcf-card-header">
         <span class="rtcf-card-label ${color}">${label}</span>
         <div class="rtcf-card-actions">
           <button class="btn-icon collapse-btn" onclick="toggleCardCollapse(this)" title="Collapse">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="18 15 12 9 6 15"/></svg>
+            <svg class="collapse-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="18 15 12 9 6 15"/></svg>
           </button>
           <button class="btn-icon" onclick="copySection('${s}')" title="Copy ${label}">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
@@ -631,14 +701,7 @@ function renderOutputGrid() {
 }
 
 function toggleCardCollapse(btn) {
-  const card = btn.closest('.rtcf-card');
-  card.classList.toggle('collapsed');
-  const svg = btn.querySelector('svg polyline');
-  if (card.classList.contains('collapsed')) {
-    svg.setAttribute('points', '18 9 12 15 6 9');
-  } else {
-    svg.setAttribute('points', '18 15 12 9 6 15');
-  }
+  btn.closest('.rtcf-card').classList.toggle('collapsed');
 }
 
 function toggleAdvanced() {
@@ -861,12 +924,128 @@ ${fmt.promptSuffix}`;
   return parsed;
 }
 
+// ─── PROMPT COACH ───────────────────────────────────────────────────────────
+
+async function enhancePrompt() {
+  const raw = document.getElementById('raw-prompt').value.trim();
+  if (!raw) return;
+  const btn = document.getElementById('enhance-btn');
+  const origText = btn.textContent;
+  btn.textContent = 'Enhancing…';
+  btn.disabled = true;
+  try {
+    const key = getApiKey();
+    if (!key) { showToast('Set your API key first', ''); btn.textContent = origText; btn.disabled = false; return; }
+    const res = await fetch(OR_URL, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json', 'HTTP-Referer': 'https://promptforge.app', 'X-Title': 'PromptForge' },
+      body: JSON.stringify({
+        model: CURATED_MODELS[0].id,
+        messages: [
+          { role: 'system', content: 'You are a prompt coach. Improve the user\'s raw prompt to be more specific, detailed, and effective. Fix vague language, add concrete constraints, and structure it for AI clarity. Return ONLY the improved prompt — no explanation, no prefix, no markdown.' },
+          { role: 'user', content: raw }
+        ],
+        temperature: 0.4,
+        max_tokens: 2048
+      })
+    });
+    if (!res.ok) throw new Error('API error');
+    const data = await res.json();
+    const enhanced = data?.choices?.[0]?.message?.content?.trim();
+    if (!enhanced) throw new Error('Empty response');
+    document.getElementById('raw-prompt').value = enhanced;
+    autoResize(document.getElementById('raw-prompt'));
+    updatePromptCounter();
+    detectVariables();
+    showToast('Prompt enhanced ✨', 'success');
+  } catch (err) {
+    showToast('Enhancement failed — using original', 'error');
+  }
+  btn.textContent = origText;
+  btn.disabled = false;
+}
+
+// ─── BATCH FORGE ────────────────────────────────────────────────────────────
+
+let _batchResults = [];
+
+function renderBatchComparison(results, raw, goal, tone) {
+  _batchResults = results;
+  const bc = document.getElementById('batch-comparison');
+  const fmt = getFmt();
+  const labels = fmt.labels;
+  const defaultText = (s) => `[The AI did not generate content for ${labels[s]}.]`;
+
+  const html = results.map((parsed, idx) => {
+    if (parsed._error) {
+      return `<div class="batch-result" style="border-color:var(--red);cursor:default;">
+        <div class="batch-result-header"><span>Variation ${idx + 1}</span><span style="color:var(--red)">Failed</span></div>
+        <div class="batch-result-body" style="color:var(--muted);">${escapeHtml(parsed._error)}</div>
+      </div>`;
+    }
+    fmt.sections.forEach(s => {
+      if (!parsed[s] || typeof parsed[s] !== 'string' || !parsed[s].trim()) parsed[s] = defaultText(s);
+    });
+    const body = fmt.sections.map(s =>
+      `<div class="batch-section"><div class="batch-section-label ${fmt.colors[s]}">${labels[s]}</div><div>${escapeHtml(parsed[s])}</div></div>`
+    ).join('');
+    return `<div class="batch-result" onclick="pickBatchWinner(${idx})">
+      <div class="batch-result-header"><span>Variation ${idx + 1}</span><span style="color:var(--accent);font-weight:600;">Click to pick</span></div>
+      <div class="batch-result-body">${body}</div>
+    </div>`;
+  }).join('');
+
+  bc.innerHTML = `<div class="batch-comparison">${html}</div>`;
+}
+
+function pickBatchWinner(idx) {
+  const parsed = _batchResults[idx];
+  const _batchRaw = document.getElementById('raw-prompt').value.trim();
+  const goal = document.getElementById('goal-select').value;
+  const tone = document.getElementById('tone-select').value;
+  const fmt = getFmt();
+  document.getElementById('batch-comparison').innerHTML = '';
+  document.querySelectorAll('.batch-result').forEach(el => el.remove());
+
+  fmt.sections.forEach(s => {
+    document.getElementById(`section-${s}`).value = parsed[s] || '';
+  });
+  document.querySelectorAll('.rtcf-card textarea').forEach(el => autoResize(el));
+  fmt.sections.forEach(s => updateSectionCounter(s));
+
+  localStorage.removeItem('promptforge_draft');
+  saveToHistory(_batchRaw, goal, tone, parsed, fmt.sections);
+  renderHistory();
+  updateStats(goal);
+  updateShareUrl(fmt.sections, parsed);
+
+  const complexity = parseInt(document.getElementById('complexity-slider').value);
+  const cost = estimateCost(_batchRaw.length, complexity >= 7 ? 8192 : complexity >= 4 ? 4096 : 2048);
+  const statusEl = document.getElementById('forge-status');
+  if (cost && cost.cost > 0) {
+    statusEl.textContent = `~${cost.inTok} in / ~${cost.outTok} out · $${cost.cost.toFixed(4)}`;
+    statusEl.classList.remove('active');
+  } else {
+    statusEl.textContent = cost ? 'Free model' : '';
+  }
+  showToast('Picked variation ' + (idx + 1), 'success');
+}
+
+let _batchCount = 1;
+
+function setBatchCount(n) {
+  _batchCount = n;
+  document.querySelectorAll('.batch-opt').forEach(el => el.classList.toggle('active', parseInt(el.dataset.n) === n));
+}
+
 // ─── FORGE ─────────────────────────────────────────────────────────────────
 
 let _chainDepth = 0;
 
 async function forgePrompt() {
-  const raw = document.getElementById('raw-prompt').value.trim();
+  let raw = document.getElementById('raw-prompt').value.trim();
+  if (_varPreview) { _varPreview = false; document.getElementById('variables-bar').querySelector('.var-preview-btn')?.classList.remove('active'); }
+  raw = replaceVariables(raw);
   if (!raw) {
     showToast('Paste a prompt first', '');
     document.getElementById('raw-prompt').focus();
@@ -895,43 +1074,60 @@ async function forgePrompt() {
   const output = document.getElementById('output-section');
   output.classList.add('visible');
   document.querySelectorAll('.rtcf-card').forEach(c => c.classList.add('loading'));
+  const bc = document.getElementById('batch-comparison');
+  bc.innerHTML = '';
   output.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   let resolved = false;
 
   try {
     statusEl.textContent = 'Generating...';
-    const parsed = await callAI(raw, goal, tone, complexity);
-    const fmt = getFmt();
 
-    document.querySelectorAll('.rtcf-card').forEach(c => c.classList.remove('loading'));
-
-    _chainDepth = 0;
-    document.getElementById('chain-breadcrumb').innerHTML = '';
-
-    document.getElementById('reroll-btn').classList.add('visible');
-
-    fmt.sections.forEach(s => {
-      document.getElementById(`section-${s}`).value = parsed[s] || '';
-    });
-    document.querySelectorAll('.rtcf-card textarea').forEach(el => autoResize(el));
-    fmt.sections.forEach(s => updateSectionCounter(s));
-
-    localStorage.removeItem('promptforge_draft');
-
-    saveToHistory(raw, goal, tone, parsed, fmt.sections);
-    renderHistory();
-    updateStats(goal);
-    updateShareUrl(fmt.sections, parsed);
-    // Show cost estimate
-    const cost = estimateCost(raw.length, complexity >= 7 ? 8192 : complexity >= 4 ? 4096 : 2048);
-    if (cost && cost.cost > 0) {
-      statusEl.textContent = `~${cost.inTok} in / ~${cost.outTok} out · $${cost.cost.toFixed(4)}`;
-      statusEl.classList.remove('active');
+    if (_batchCount === 2) {
+      // Batch mode
+      const [r1, r2] = await Promise.all([
+        callAI(raw, goal, tone, complexity).catch(e => ({ _error: e.message || 'Failed' })),
+        callAI(raw, goal, tone, complexity).catch(e => ({ _error: e.message || 'Failed' }))
+      ]);
+      document.querySelectorAll('.rtcf-card').forEach(c => c.classList.remove('loading'));
+      _chainDepth = 0;
+      document.getElementById('chain-breadcrumb').innerHTML = '';
+      document.getElementById('reroll-btn').classList.add('visible');
+      renderBatchComparison([r1, r2], raw, goal, tone);
+      resolved = true;
     } else {
-      statusEl.textContent = cost ? 'Free model' : '';
+      const parsed = await callAI(raw, goal, tone, complexity);
+      const fmt = getFmt();
+
+      document.querySelectorAll('.rtcf-card').forEach(c => c.classList.remove('loading'));
+
+      _chainDepth = 0;
+      document.getElementById('chain-breadcrumb').innerHTML = '';
+
+      document.getElementById('reroll-btn').classList.add('visible');
+
+      fmt.sections.forEach(s => {
+        document.getElementById(`section-${s}`).value = parsed[s] || '';
+      });
+      document.querySelectorAll('.rtcf-card textarea').forEach(el => autoResize(el));
+      fmt.sections.forEach(s => updateSectionCounter(s));
+
+      localStorage.removeItem('promptforge_draft');
+
+      saveToHistory(raw, goal, tone, parsed, fmt.sections);
+      renderHistory();
+      updateStats(goal);
+      updateShareUrl(fmt.sections, parsed);
+      // Show cost estimate
+      const cost = estimateCost(raw.length, complexity >= 7 ? 8192 : complexity >= 4 ? 4096 : 2048);
+      if (cost && cost.cost > 0) {
+        statusEl.textContent = `~${cost.inTok} in / ~${cost.outTok} out · $${cost.cost.toFixed(4)}`;
+        statusEl.classList.remove('active');
+      } else {
+        statusEl.textContent = cost ? 'Free model' : '';
+      }
+      resolved = true;
     }
-    resolved = true;
   } catch (err) {
     if (err instanceof ApiError && err.isQuota && err.retryAfter > 0) {
       const wait = Math.ceil(err.retryAfter) + 1;
@@ -1114,7 +1310,7 @@ function loadHistoryItem(id) {
   fmt.sections.forEach(s => updateSectionCounter(s));
   document.getElementById('output-section').classList.add('visible');
   document.getElementById('chain-breadcrumb').innerHTML = '';
-  document.getElementById('content').scrollTop = 0;
+  const _panel = document.querySelector('.forge-panel-input') || document.getElementById('templates-view'); if (_panel) _panel.scrollTop = 0;
   if (window.innerWidth <= 768) closeSidebar();
 }
 
@@ -1149,12 +1345,12 @@ function renderHistory() {
     return;
   }
 
-  list.innerHTML = filtered.map((h) => {
+  list.innerHTML = filtered.map((h, idx) => {
     const ago = timeAgo(h.createdAt);
     const goalLabel = h.goal.charAt(0).toUpperCase() + h.goal.slice(1);
     const rawPreview = h.rawPrompt.length > 70 ? h.rawPrompt.substring(0, 70) + '…' : h.rawPrompt;
     const sid = sanitizeId(h.id);
-    return `<div class="history-item" onclick="loadHistoryItem('${sid}')">
+    return `<div class="history-item reveal" style="animation-delay:${Math.min(idx * 0.03, 0.5)}s" onclick="loadHistoryItem('${sid}')">
       <div class="history-item-header">
         <div class="history-item-left">
           <div class="history-reorder">
@@ -1178,6 +1374,7 @@ function renderHistory() {
       </div>
     </div>`;
   }).join('');
+  initScrollReveal();
 }
 
 function setHistoryFilter(filter) {
@@ -1478,6 +1675,152 @@ function tryExamplePrompt(idx) {
   showToast('Prompt loaded! Hit Forge to start', 'success');
 }
 
+// ─── PLAYBOOKS ──────────────────────────────────────────────────────────────
+
+function getPlaybooks() {
+  try { return JSON.parse(localStorage.getItem('promptforge_playbooks') || '[]'); } catch { return []; }
+}
+
+function savePlaybooks(data) {
+  try { localStorage.setItem('promptforge_playbooks', JSON.stringify(data)); } catch {}
+}
+
+function saveCurrentAsPlaybook() {
+  const name = prompt('Name this playbook:', '');
+  if (!name) return;
+  const playbooks = getPlaybooks();
+  playbooks.push({
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    name,
+    goal: document.getElementById('goal-select').value,
+    tone: document.getElementById('tone-select').value,
+    formatId: document.getElementById('format-select').value,
+    complexity: parseInt(document.getElementById('complexity-slider').value),
+    customPrompt: document.getElementById('custom-prompt').value.trim(),
+    createdAt: Date.now()
+  });
+  savePlaybooks(playbooks);
+  renderSidebarPlaybooks();
+  showToast('Playbook saved', 'success');
+}
+
+function deletePlaybook(id) {
+  let playbooks = getPlaybooks();
+  playbooks = playbooks.filter(p => p.id !== id);
+  savePlaybooks(playbooks);
+  renderSidebarPlaybooks();
+}
+
+function loadPlaybook(id) {
+  const playbooks = getPlaybooks();
+  const p = playbooks.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('goal-select').value = p.goal;
+  document.getElementById('tone-select').value = p.tone;
+  if (p.formatId) document.getElementById('format-select').value = p.formatId;
+  document.getElementById('complexity-slider').value = p.complexity || 5;
+  if (p.customPrompt) {
+    document.getElementById('custom-prompt').value = p.customPrompt;
+    document.getElementById('advanced-section').style.display = 'block';
+    document.getElementById('advanced-toggle').textContent = 'Advanced ▴';
+  }
+  saveSession();
+  showToast(`Loaded "${p.name}"`, 'success');
+}
+
+function renderSidebarPlaybooks() {
+  const list = document.getElementById('playbooks-list');
+  const playbooks = getPlaybooks();
+  const selected = _abTestSelection;
+  if (playbooks.length === 0) {
+    list.innerHTML = '<div class="history-empty"><div>No playbooks yet</div><div style="font-size:var(--fs-xs);color:var(--muted);margin-top:4px;">Save your forge configuration to reuse later</div></div>';
+    return;
+  }
+  let abBtn = '';
+  if (selected.length === 2) {
+    abBtn = `<div style="padding:var(--gap-sm) var(--gap-lg);border-bottom:1px solid var(--border);">
+      <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="runABTest()">A/B Test: ${selected.map(id => playbooks.find(p => p.id === id)?.name || '?').join(' vs ')}</button>
+    </div>`;
+  }
+  list.innerHTML = abBtn + playbooks.map(p => {
+    const sid = sanitizeId(p.id);
+    const isSelected = selected.includes(p.id);
+    return `<div class="sidebar-template-item" onclick="toggleABSelect('${sid}')" style="${isSelected ? 'background:var(--accent-soft);border-left:2px solid var(--accent);' : ''}">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <span class="template-name">${escapeHtml(p.name)}</span>
+        <div style="display:flex;gap:2px;">
+          <span style="font-size:10px;color:var(--muted);cursor:pointer;" onclick="event.stopPropagation();loadPlaybook('${sid}')">Load</span>
+          <button class="btn-icon" onclick="event.stopPropagation();deletePlaybook('${sid}')" title="Delete" style="padding:2px;min-width:auto;min-height:auto;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          </button>
+        </div>
+      </div>
+      <div style="font-size:var(--fs-xs);color:var(--muted);margin-top:2px;display:flex;gap:var(--gap-sm);">
+        <span class="history-goal ${p.goal}" style="font-size:9px;">${p.goal}</span>
+        <span>${p.formatId?.toUpperCase() || 'RTCF'}</span>
+        <span>Cpx ${p.complexity || 5}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+let _abTestSelection = [];
+
+function toggleABSelect(id) {
+  const idx = _abTestSelection.indexOf(id);
+  if (idx >= 0) { _abTestSelection.splice(idx, 1); }
+  else { if (_abTestSelection.length < 2) _abTestSelection.push(id); else { _abTestSelection.shift(); _abTestSelection.push(id); } }
+  renderSidebarPlaybooks();
+}
+
+async function runABTest() {
+  const playbooks = getPlaybooks();
+  const p1 = playbooks.find(p => p.id === _abTestSelection[0]);
+  const p2 = playbooks.find(p => p.id === _abTestSelection[1]);
+  if (!p1 || !p2) return;
+
+  // Save current, load p1
+  const savedGoal = document.getElementById('goal-select').value;
+  const savedTone = document.getElementById('tone-select').value;
+  const savedFmt = document.getElementById('format-select').value;
+  const savedCpx = document.getElementById('complexity-slider').value;
+
+  // Use the raw prompt from textarea as input for both
+  const raw = document.getElementById('raw-prompt').value.trim();
+  if (!raw) { showToast('Enter a prompt to A/B test', ''); return; }
+
+  _batchCount = 1;
+  document.querySelectorAll('.batch-opt').forEach(el => el.classList.toggle('active', parseInt(el.dataset.n) === 1));
+  _abTestSelection = [];
+
+  const key = getApiKey();
+  if (!key) { showToast('Set your API key first', ''); return; }
+
+  const btn = document.getElementById('forge-btn');
+  btn.classList.add('loading');
+  const statusEl = document.getElementById('forge-status');
+  statusEl.textContent = 'Running A/B test...';
+  statusEl.classList.add('active');
+
+  try {
+    const [r1, r2] = await Promise.all([
+      callAI(raw, p1.goal, p1.tone, p1.complexity || 5).catch(e => ({ _error: e.message || 'Failed' })),
+      callAI(raw, p2.goal, p2.tone, p2.complexity || 5).catch(e => ({ _error: e.message || 'Failed' }))
+    ]);
+    document.querySelectorAll('.rtcf-card').forEach(c => c.classList.remove('loading'));
+    document.getElementById('output-section').classList.add('visible');
+    const fmt = getFmt();
+    document.getElementById('chain-breadcrumb').innerHTML = '';
+    document.getElementById('reroll-btn').classList.add('visible');
+    renderBatchComparison([r1, r2], raw, savedGoal);
+    statusEl.textContent = 'Pick the winning variation';
+    showToast('A/B test complete', 'success');
+  } catch (e) {
+    showToast('A/B test failed', 'error');
+  }
+  btn.classList.remove('loading');
+}
+
 // ─── TEMPLATE LIBRARY ──────────────────────────────────────────────────────
 
 const TEMPLATE_LIBRARY = [
@@ -1608,6 +1951,96 @@ function updatePromptCounter() {
   counter.textContent = `${words} words · ${text.length} chars`;
 }
 
+// ─── VARIABLE INJECTION ──────────────────────────────────────────────────────
+
+let _variableValues = {};
+let _varPreview = false;
+
+function detectVariables() {
+  const text = document.getElementById('raw-prompt').value;
+  const vars = [...text.matchAll(/\{\{(\w+)\}\}/g)].map(m => m[1]);
+  const bar = document.getElementById('variables-bar');
+  const unique = [...new Set(vars)];
+  if (unique.length === 0) { bar.classList.remove('visible'); bar.innerHTML = ''; return; }
+  // Remove stale keys
+  Object.keys(_variableValues).forEach(k => { if (!unique.includes(k)) delete _variableValues[k]; });
+  bar.innerHTML = unique.map(v => {
+    const val = _variableValues[v] || '';
+    const filled = !!val;
+    return `<span class="var-chip ${filled ? 'filled' : ''}">
+      <span class="var-name">{{${v}}}</span>
+      <input type="text" class="var-input" value="${escapeHtml(val)}" placeholder="value…" data-var="${v}" oninput="onVarInput(this)" />
+    </span>`;
+  }).join('') + `<button class="var-preview-btn ${_varPreview ? 'active' : ''}" onclick="toggleVarPreview()">Preview</button>`;
+  bar.classList.add('visible');
+  // Re-highlight textarea with vars
+  if (_varPreview) applyVarPreview();
+}
+
+function onVarInput(el) {
+  _variableValues[el.dataset.var] = el.value;
+  el.closest('.var-chip').classList.toggle('filled', !!el.value);
+  if (_varPreview) applyVarPreview();
+}
+
+function toggleVarPreview() {
+  _varPreview = !_varPreview;
+  const bar = document.getElementById('variables-bar');
+  const btn = bar.querySelector('.var-preview-btn');
+  if (btn) btn.classList.toggle('active', _varPreview);
+  applyVarPreview();
+}
+
+function applyVarPreview() {
+  const ta = document.getElementById('raw-prompt');
+  if (!_varPreview) { ta.value = ta.dataset.rawVars || ta.value; delete ta.dataset.rawVars; return; }
+  ta.dataset.rawVars = ta.value;
+  ta.value = replaceVariables(ta.dataset.rawVars);
+}
+
+function replaceVariables(text) {
+  let result = text;
+  Object.entries(_variableValues).forEach(([k, v]) => {
+    if (v) result = result.replace(new RegExp(`\\{\\{${k}\\}\\}`, 'g'), v);
+  });
+  return result;
+}
+
+// ─── RIPPLE EFFECT ─────────────────────────────────────────────────────────
+
+document.addEventListener('mousedown', (e) => {
+  const btn = e.target.closest('.btn:not(.btn-icon)');
+  if (!btn) return;
+  const rect = btn.getBoundingClientRect();
+  const r = document.createElement('span');
+  r.className = 'ripple';
+  const size = Math.max(rect.width, rect.height);
+  r.style.width = r.style.height = size + 'px';
+  r.style.left = (e.clientX - rect.left - size / 2) + 'px';
+  r.style.top = (e.clientY - rect.top - size / 2) + 'px';
+  btn.appendChild(r);
+  r.addEventListener('animationend', () => r.remove());
+});
+
+// ─── SCROLL REVEAL ──────────────────────────────────────────────────────────
+
+let _observer;
+function initScrollReveal() {
+  if (_observer) _observer.disconnect();
+  _observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.style.animationPlayState = 'running';
+        _observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+  document.querySelectorAll('.reveal').forEach(el => {
+    el.style.animationPlayState = 'paused';
+    _observer.observe(el);
+  });
+}
+
 // ─── KEYBOARD SHORTCUTS ────────────────────────────────────────────────────
 
 document.addEventListener('keydown', (e) => {
@@ -1694,7 +2127,7 @@ function resetForge() {
     const el = document.getElementById(`section-${s}`);
     if (el) el.value = '';
   });
-  document.getElementById('content').scrollTop = 0;
+  const _panel = document.querySelector('.forge-panel-input') || document.getElementById('templates-view'); if (_panel) _panel.scrollTop = 0;
 }
 
 function showToast(msg, type) {
@@ -1702,27 +2135,28 @@ function showToast(msg, type) {
   const toast = document.createElement('div');
   toast.className = `toast ${type || ''}`;
   if (type === 'success') {
-    toast.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>${escapeHtml(msg)}`;
+    toast.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>${escapeHtml(msg)}<div class="toast-bar"></div>`;
   } else if (type === 'error') {
-    toast.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>${escapeHtml(msg)}`;
+    toast.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>${escapeHtml(msg)}<div class="toast-bar"></div>`;
   } else {
-    toast.textContent = msg;
+    toast.innerHTML = `${escapeHtml(msg)}<div class="toast-bar"></div>`;
   }
   container.appendChild(toast);
-  setTimeout(() => { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 2200);
+  setTimeout(() => { if (toast.parentNode) { toast.style.animation = 'slideOutToast 0.25s var(--ease-spring) forwards'; setTimeout(() => toast.remove(), 300); } }, 2400);
 }
 
 // ─── TEMPLATES ─────────────────────────────────────────────────────────────
 
 function renderTemplates() {
   const grid = document.getElementById('template-grid');
-  grid.innerHTML = TEMPLATE_LIBRARY.map(t => `
-    <div class="template-card" onclick="loadTemplate('${t.name}','${t.goal}')">
+  grid.innerHTML = TEMPLATE_LIBRARY.map((t, i) => `
+    <div class="template-card reveal" style="animation-delay:${Math.min(i * 0.04, 0.4)}s" onclick="loadTemplate('${t.name}','${t.goal}')">
       <span class="history-goal ${t.goal}">${t.goal.charAt(0).toUpperCase() + t.goal.slice(1)}</span>
       <div class="template-name">${t.name}</div>
       <div class="template-desc">${t.desc}</div>
     </div>
   `).join('');
+  initScrollReveal();
 }
 
 function loadTemplate(name, goal) {
@@ -1742,6 +2176,8 @@ document.getElementById('raw-prompt').addEventListener('input', () => {
   autoResize(document.getElementById('raw-prompt'));
   updatePromptCounter();
   localStorage.setItem('promptforge_draft', document.getElementById('raw-prompt').value);
+  detectVariables();
+  document.getElementById('enhance-btn').style.display = document.getElementById('raw-prompt').value.trim() ? '' : 'none';
 });
 
 // Session auto-save on control changes
@@ -1797,11 +2233,13 @@ window.addEventListener('hashchange', restoreFromHash);
   renderTemplates();
   renderCustomTemplates();
   renderSidebarTemplates();
+  renderSidebarPlaybooks();
   renderDiscover();
   renderPresets();
   renderStats();
   autoResize(document.getElementById('raw-prompt'));
   updatePromptCounter();
+  initScrollReveal();
 
   // PWA Service Worker registration
   if ('serviceWorker' in navigator) {
