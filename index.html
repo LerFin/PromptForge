@@ -188,7 +188,7 @@
     .rtcf-card-label { font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
     .rtcf-card-label.blue { color: var(--blue); }
     .rtcf-card-label.orange { color: var(--orange); }
-    .rtcf-card-label.green { color: var(--green); }
+    .rtcf-card-label.green { color: var(--accent); }
     .rtcf-card-label.accent { color: var(--accent); }
     .rtcf-card-label.purple { color: var(--purple); }
     .rtcf-card-label.muted { color: var(--muted); }
@@ -257,7 +257,7 @@
     .history-goal { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; padding: 1px 7px; border-radius: 100px; font-weight: 500; flex-shrink: 0; }
     .history-goal.coding { background: color-mix(in oklch, var(--blue) 14%, transparent); color: var(--blue); }
     .history-goal.writing { background: color-mix(in oklch, var(--orange) 14%, transparent); color: var(--orange); }
-    .history-goal.business { background: color-mix(in oklch, var(--green) 14%, transparent); color: var(--green); }
+    .history-goal.business { background: color-mix(in oklch, var(--accent) 14%, transparent); color: var(--accent); }
     .history-goal.research { background: color-mix(in oklch, var(--accent) 14%, transparent); color: var(--accent); }
     .history-goal.creative { background: color-mix(in oklch, var(--purple) 14%, transparent); color: var(--purple); }
     .history-goal.automation { background: color-mix(in oklch, var(--muted) 14%, transparent); color: var(--muted); }
@@ -295,7 +295,7 @@
     .toast-container { position: fixed; bottom: var(--gap-xl); right: var(--gap-xl); z-index: 999; display: flex; flex-direction: column; gap: var(--gap-sm); pointer-events: none; }
     .toast { background: var(--surface-raised); border: 1px solid var(--border-light); border-radius: var(--radius); padding: 10px var(--gap-lg); font-size: var(--fs-sm); color: var(--fg); animation: slideInToast 0.35s var(--ease-bounce); box-shadow: 0 4px 24px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 8px; pointer-events: auto; position: relative; overflow: hidden; }
     .toast svg { width: 16px; height: 16px; flex-shrink: 0; }
-    .toast.success svg { stroke: var(--green); }
+    .toast.success svg { stroke: var(--accent); }
     .toast.error { border-color: var(--red); }
     .toast.error svg { stroke: var(--red); }
     .toast-bar { position: absolute; bottom: 0; left: 0; height: 2px; background: var(--accent); animation: toastProgress 2.4s linear forwards; }
@@ -1775,17 +1775,10 @@ function toggleABSelect(id) {
 
 async function runABTest() {
   const playbooks = getPlaybooks();
-  const p1 = playbooks.find(p => p.id === _abTestSelection[0]);
-  const p2 = playbooks.find(p => p.id === _abTestSelection[1]);
+  const p1 = playbooks.find(p => sanitizeId(p.id) === _abTestSelection[0]);
+  const p2 = playbooks.find(p => sanitizeId(p.id) === _abTestSelection[1]);
   if (!p1 || !p2) return;
 
-  // Save current, load p1
-  const savedGoal = document.getElementById('goal-select').value;
-  const savedTone = document.getElementById('tone-select').value;
-  const savedFmt = document.getElementById('format-select').value;
-  const savedCpx = document.getElementById('complexity-slider').value;
-
-  // Use the raw prompt from textarea as input for both
   const raw = document.getElementById('raw-prompt').value.trim();
   if (!raw) { showToast('Enter a prompt to A/B test', ''); return; }
 
@@ -1812,7 +1805,7 @@ async function runABTest() {
     const fmt = getFmt();
     document.getElementById('chain-breadcrumb').innerHTML = '';
     document.getElementById('reroll-btn').classList.add('visible');
-    renderBatchComparison([r1, r2], raw, savedGoal);
+    renderBatchComparison([r1, r2], raw, p1.goal);
     statusEl.textContent = 'Pick the winning variation';
     showToast('A/B test complete', 'success');
   } catch (e) {
