@@ -124,6 +124,20 @@
     .batch-opt { padding: 6px 10px; font-size: var(--fs-xs); cursor: pointer; color: var(--muted); transition: all 0.12s; user-select: none; }
     .batch-opt:hover { color: var(--fg); }
     .batch-opt.active { background: var(--accent); color: #fff; }
+    .auto-route-toggle { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-xs); color: var(--muted); cursor: pointer; padding: 4px 8px; border: 1px solid var(--border); border-radius: var(--radius); transition: all 0.12s; user-select: none; }
+    .auto-route-toggle:hover { border-color: var(--accent); color: var(--fg); }
+    .auto-route-toggle input { accent-color: var(--accent); }
+    .auto-route-toggle:has(input:checked) { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+    .testlab-grid { display: grid; grid-template-columns: 1fr; gap: var(--gap-md); margin-top: var(--gap-md); }
+    .testlab-row { background: var(--surface-card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .testlab-row-header { display: flex; align-items: center; justify-content: space-between; padding: var(--gap-sm) var(--gap-md); background: var(--surface); border-bottom: 1px solid var(--border); font-size: var(--fs-xs); color: var(--muted); gap: var(--gap-sm); }
+    .testlab-row-header .label { font-weight: 500; color: var(--fg-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .testlab-row-body { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--gap-sm); padding: var(--gap-md); }
+    .testlab-cell { }
+    .testlab-cell-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; margin-bottom: var(--gap-xs); }
+    .testlab-cell-content { font-size: var(--output-font-size, 13px); line-height: 1.6; max-height: 200px; overflow-y: auto; background: var(--surface-raised); border-radius: var(--radius); padding: var(--gap-sm); }
+    .testlab-input { width: 100%; min-height: 60px; background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--gap-sm); color: var(--fg); font-size: var(--fs-sm); resize: vertical; outline: none; line-height: 1.5; }
+    .testlab-input:focus { border-color: var(--accent); }
     .forge-btn { padding: 8px var(--gap-xl); position: relative; }
     .forge-btn.loading { pointer-events: none; opacity: 0.8; }
     .forge-btn .spinner { display: none; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; }
@@ -382,6 +396,7 @@
             <textarea id="raw-prompt" placeholder='Paste your raw prompt here… e.g. "write me a blog post about AI"'></textarea>
             <div class="input-counter" id="prompt-counter">0 words · 0 chars</div>
             <div id="smart-badge-area"></div>
+            <div id="auto-route-badge" style="display:none;margin-top:var(--gap-sm);"></div>
             <div id="variables-bar"></div>
             <div class="controls-row">
               <div class="controls-row-top">
@@ -432,6 +447,11 @@
                     <span class="batch-opt active" data-n="1" onclick="setBatchCount(1)">1x</span>
                     <span class="batch-opt" data-n="2" onclick="setBatchCount(2)">2x</span>
                   </div>
+                  <label class="auto-route-toggle" title="Auto-detect goal/tone/format/complexity">
+                    <input type="checkbox" id="auto-route-check" onchange="onAutoRouteChange()" />
+                    <span>Auto</span>
+                  </label>
+                  <button class="btn btn-ghost" onclick="toggleTestLab()" id="testlab-btn" title="Test multiple prompts">🧪 Lab</button>
                   <button class="btn btn-secondary" onclick="forgePrompt()" id="reroll-btn" title="Re-run with the same input" style="display:none;">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6M3 12a9 9 0 0 1 15.36-6.36L21 8M3 22v-6h6M21 12a9 9 0 0 1-15.36 6.36L3 16"/></svg>
                     Re-roll
@@ -452,6 +472,16 @@
               <div class="presets-list" id="presets-list"></div>
             </div>
 
+            <div id="testlab-section" style="display:none;margin-top:var(--gap-md);padding:var(--gap-md);background:var(--surface);border-radius:var(--radius-lg);border:1px solid var(--border);">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--gap-sm);">
+                <span style="font-size:var(--fs-xs);color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;font-weight:500;">Test Lab — multiple inputs</span>
+                <button class="btn-icon" onclick="addTestInput()" title="Add test" style="padding:4px;min-width:auto;min-height:auto;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14m-7-7h14"/></svg>
+                </button>
+              </div>
+              <div id="testlab-inputs"></div>
+              <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:var(--gap-sm);" onclick="runTestLab()" id="run-testlab-btn">Run All Tests</button>
+            </div>
             <div style="margin-top:var(--gap-md)">
               <a id="advanced-toggle" style="font-size:var(--fs-xs);color:var(--muted);cursor:pointer;user-select:none;" onclick="toggleAdvanced()">Advanced ▾</a>
               <div id="advanced-section" style="display:none;margin-top:var(--gap-sm);padding:var(--gap-md);background:var(--surface);border-radius:var(--radius-lg);border:1px solid var(--border);">
@@ -466,6 +496,7 @@
 
             <div class="rtcf-grid" id="rtcf-grid"></div>
             <div id="batch-comparison"></div>
+            <div id="testlab-results" style="display:none;"></div>
             <div class="actions-row">
               <button class="btn btn-primary" onclick="copyFullPrompt()" id="copy-btn">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
@@ -1048,11 +1079,178 @@ function setBatchCount(n) {
   document.querySelectorAll('.batch-opt').forEach(el => el.classList.toggle('active', parseInt(el.dataset.n) === n));
 }
 
+// ─── SMART AUTO-ROUTE ───────────────────────────────────────────────────────
+
+function onAutoRouteChange() {
+  const checked = document.getElementById('auto-route-check').checked;
+  if (checked) document.getElementById('auto-route-badge').textContent = 'Auto-route enabled — will detect on forge';
+  else document.getElementById('auto-route-badge').style.display = 'none';
+}
+
+async function autoRoute(raw) {
+  const badge = document.getElementById('auto-route-badge');
+  badge.textContent = 'Auto-detecting...';
+  badge.style.display = 'block';
+  try {
+    const key = getApiKey();
+    if (!key) return;
+    const res = await fetch(OR_URL, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json', 'HTTP-Referer': 'https://promptforge.app', 'X-Title': 'PromptForge' },
+      body: JSON.stringify({
+        model: CURATED_MODELS[0].id,
+        messages: [
+          { role: 'system', content: 'You are a prompt classifier. Given a user\'s raw prompt, determine the best goal, tone, format, and complexity (1-10). Choose goal from: coding, writing, business, research, creative, automation, learning, analysis, summarization. Choose tone from: professional, aggressive, casual, technical, persuasive, empathetic, witty, inspirational, academic. Choose format from: rtcf, costar, roses, tag, facts. Return ONLY valid JSON with keys: goal, tone, format, complexity. No other text.' },
+          { role: 'user', content: raw }
+        ],
+        temperature: 0.1,
+        max_tokens: 300
+      })
+    });
+    if (!res.ok) throw new Error('API error');
+    const data = await res.json();
+    const text = data?.choices?.[0]?.message?.content?.trim();
+    if (!text) throw new Error('Empty');
+    // Extract JSON block
+    let parsed;
+    try { parsed = JSON.parse(text); } catch {
+      const m = text.match(/\{[\s\S]*\}/);
+      if (m) try { parsed = JSON.parse(m[0]); } catch {}
+    }
+    if (parsed && parsed.goal) {
+      const gs = document.getElementById('goal-select');
+      const ts = document.getElementById('tone-select');
+      const fs = document.getElementById('format-select');
+      if ([...gs.options].some(o => o.value === parsed.goal)) gs.value = parsed.goal;
+      if ([...ts.options].some(o => o.value === parsed.tone)) ts.value = parsed.tone;
+      if (parsed.format && FORMATS[parsed.format]) fs.value = parsed.format;
+      if (parsed.complexity) document.getElementById('complexity-slider').value = Math.min(10, Math.max(1, parseInt(parsed.complexity) || 5));
+      badge.innerHTML = `Auto: <strong>${parsed.goal}</strong> · ${parsed.tone} · ${(parsed.format || 'rtcf').toUpperCase()} · Cpx ${parsed.complexity || 5}`;
+      badge.style.background = 'var(--accent-soft)';
+      badge.style.padding = '4px 10px';
+      badge.style.borderRadius = '100px';
+      badge.style.fontSize = 'var(--fs-xs)';
+      badge.style.color = 'var(--accent)';
+    }
+  } catch { badge.textContent = 'Auto-route failed — using your settings'; }
+}
+
+// ─── TEST LAB ───────────────────────────────────────────────────────────────
+
+let _testInputs = [];
+
+function toggleTestLab() {
+  const sec = document.getElementById('testlab-section');
+  const btn = document.getElementById('testlab-btn');
+  const isOpen = sec.style.display === 'block';
+  sec.style.display = isOpen ? 'none' : 'block';
+  btn.style.borderColor = isOpen ? '' : 'var(--accent)';
+  if (!isOpen && _testInputs.length === 0) addTestInput(2);
+}
+
+function addTestInput(count) {
+  const container = document.getElementById('testlab-inputs');
+  for (let i = 0; i < (count || 1); i++) {
+    const idx = _testInputs.length;
+    _testInputs.push('');
+    const div = document.createElement('div');
+    div.style.cssText = 'display:flex;gap:var(--gap-sm);align-items:start;margin-bottom:var(--gap-sm);';
+    div.innerHTML = `<span style="font-size:var(--fs-xs);color:var(--muted);padding-top:6px;white-space:nowrap;min-width:44px;">Test ${idx + 1}</span>
+      <textarea class="testlab-input" data-idx="${idx}" placeholder="Enter test prompt ${idx + 1}..." oninput="onTestInput(this)"></textarea>
+      <button class="btn-icon" onclick="removeTestInput(this)" title="Remove" style="padding:4px;min-width:auto;min-height:auto;flex-shrink:0;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>`;
+    container.appendChild(div);
+  }
+}
+
+function onTestInput(el) {
+  _testInputs[parseInt(el.dataset.idx)] = el.value;
+}
+
+function removeTestInput(btn) {
+  const container = document.getElementById('testlab-inputs');
+  const div = btn.closest('div');
+  const idx = parseInt(div.querySelector('.testlab-input').dataset.idx);
+  _testInputs.splice(idx, 1);
+  div.remove();
+  // Re-index remaining inputs
+  container.querySelectorAll('.testlab-input').forEach((el, i) => {
+    el.dataset.idx = i;
+    el.previousElementSibling.textContent = `Test ${i + 1}`;
+  });
+}
+
+async function runTestLab() {
+  const inputs = _testInputs.filter(t => t.trim()).map(t => replaceVariables(t.trim()));
+  if (inputs.length < 2) { showToast('Add at least 2 test inputs', ''); return; }
+  const key = getApiKey();
+  if (!key) { showToast('Set your API key first', ''); return; }
+
+  const goal = document.getElementById('goal-select').value;
+  const tone = document.getElementById('tone-select').value;
+  const complexity = parseInt(document.getElementById('complexity-slider').value);
+  const btn = document.getElementById('run-testlab-btn');
+  const origText = btn.textContent;
+  btn.textContent = 'Running...';
+  btn.disabled = true;
+  const statusEl = document.getElementById('forge-status');
+  statusEl.textContent = 'Running test lab...';
+  statusEl.classList.add('active');
+
+  try {
+    const results = await Promise.all(inputs.map(raw =>
+      callAI(raw, goal, tone, complexity).catch(e => ({ _error: e.message || 'Failed' }))
+    ));
+    renderTestLabResults(inputs, results);
+    statusEl.textContent = 'Test lab complete';
+  } catch (e) {
+    showToast('Test lab failed', 'error');
+  }
+  btn.textContent = origText;
+  btn.disabled = false;
+  statusEl.classList.remove('active');
+  document.getElementById('output-section').classList.add('visible');
+}
+
+function renderTestLabResults(inputs, results) {
+  const container = document.getElementById('testlab-results');
+  const fmt = getFmt();
+  const labels = fmt.labels;
+
+  container.style.display = 'block';
+  container.innerHTML = `<div style="font-size:var(--fs-xs);color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;font-weight:500;margin-bottom:var(--gap-md);">Test Lab Results (${results.length} tests)</div>
+  <div class="testlab-grid">${results.map((parsed, idx) => {
+    const rawPreview = inputs[idx].length > 50 ? inputs[idx].substring(0, 50) + '…' : inputs[idx];
+    if (parsed._error) {
+      return `<div class="testlab-row">
+        <div class="testlab-row-header"><span class="label">${escapeHtml(rawPreview)}</span><span style="color:var(--red)">Failed: ${escapeHtml(parsed._error)}</span></div>
+      </div>`;
+    }
+    const body = fmt.sections.map(s => {
+      const val = parsed[s] || '';
+      return `<div class="testlab-cell">
+        <div class="testlab-cell-label" style="color:var(--${fmt.colors[s]})">${labels[s]}</div>
+        <div class="testlab-cell-content">${escapeHtml(val)}</div>
+      </div>`;
+    }).join('');
+    return `<div class="testlab-row">
+      <div class="testlab-row-header"><span class="label">${escapeHtml(rawPreview)}</span></div>
+      <div class="testlab-row-body">${body}</div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
 // ─── FORGE ─────────────────────────────────────────────────────────────────
 
 let _chainDepth = 0;
 
 async function forgePrompt() {
+  // Auto-route first if enabled
+  if (document.getElementById('auto-route-check').checked) {
+    await autoRoute(document.getElementById('raw-prompt').value.trim());
+  }
+
   let raw = document.getElementById('raw-prompt').value.trim();
   if (_varPreview) { _varPreview = false; document.getElementById('variables-bar').querySelector('.var-preview-btn')?.classList.remove('active'); }
   raw = replaceVariables(raw);
@@ -1084,8 +1282,8 @@ async function forgePrompt() {
   const output = document.getElementById('output-section');
   output.classList.add('visible');
   document.querySelectorAll('.rtcf-card').forEach(c => c.classList.add('loading'));
-  const bc = document.getElementById('batch-comparison');
-  bc.innerHTML = '';
+  document.getElementById('batch-comparison').innerHTML = '';
+  document.getElementById('testlab-results').style.display = 'none';
   output.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   let resolved = false;
