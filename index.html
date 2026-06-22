@@ -68,16 +68,10 @@
     @keyframes slideOutToast { from { opacity: 1; transform: translateX(0) scale(1); } to { opacity: 0; transform: translateX(40px) scale(0.9); } }
     @keyframes toastProgress { from { width: 100%; } to { width: 0%; } }
     @keyframes shimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
-    @keyframes popIn { 0% { opacity: 0; transform: scale(0.92) translateY(8px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
     @keyframes popInSpring { 0% { opacity: 0; transform: scale(0.85) translateY(12px); } 60% { transform: scale(1.04) translateY(-2px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
     @keyframes pulseGlow { 0%, 100% { box-shadow: 0 0 0 0 var(--accent-soft); } 50% { box-shadow: 0 0 0 4px var(--accent-soft); } }
     @keyframes toastProgress { from { width: 100%; } to { width: 0%; } }
     @keyframes ripple { to { transform: scale(4); opacity: 0; } }
-    .animate-in { animation: fadeSlideUp 0.3s ease both; }
-    .animate-in-1 { animation-delay: 0.02s; }
-    .animate-in-2 { animation-delay: 0.06s; }
-    .animate-in-3 { animation-delay: 0.10s; }
-    .animate-in-4 { animation-delay: 0.14s; }
     .pop-in-spring { animation: popInSpring 0.5s var(--ease-bounce) both; }
     .reveal { animation: fadeSlideUp 0.4s var(--ease-out-spring) both; animation-play-state: paused; }
 
@@ -95,20 +89,17 @@
     .control-group label { font-size: var(--fs-xs); color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 500; }
     .control-group select { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 7px 28px 7px 10px; color: var(--fg); font-size: var(--fs-sm); outline: none; cursor: pointer; transition: border-color 0.2s, box-shadow 0.2s; -webkit-appearance: none; appearance: none; background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%2387867f' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; }
     .control-group select:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
-    .smart-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; padding: 2px 8px; border-radius: 100px; background: var(--accent-soft); color: var(--accent); font-weight: 500; margin-top: var(--gap-sm); animation: fadeIn 0.3s ease; }
     #variables-bar { display: none; margin-top: var(--gap-sm); padding: var(--gap-sm) var(--gap-md); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); gap: var(--gap-xs); flex-wrap: wrap; align-items: center; animation: fadeSlideUp 0.2s var(--ease-out-spring); }
     #variables-bar.visible { display: flex; }
     .var-chip { display: inline-flex; align-items: center; gap: 4px; background: var(--surface-raised); border: 1px solid var(--border); border-radius: 100px; padding: 2px 6px 2px 10px; font-size: var(--fs-xs); }
     .var-chip .var-name { color: var(--accent); font-family: var(--font-mono); font-size: 10px; white-space: nowrap; }
     .var-chip input { width: 80px; background: transparent; border: none; border-bottom: 1px solid var(--border); color: var(--fg); font-size: 10px; padding: 1px 4px; outline: none; }
     .var-chip input:focus { border-bottom-color: var(--accent); }
+    .var-input { font-family: var(--font-mono); }
     .var-chip.filled { border-color: var(--accent); background: var(--accent-soft); }
     .var-preview-btn { font-size: 10px; padding: 2px 8px; border-radius: 100px; background: transparent; border: 1px solid var(--border); color: var(--muted); cursor: pointer; transition: all 0.12s; white-space: nowrap; }
     .var-preview-btn:hover { border-color: var(--accent); color: var(--fg); }
     .var-preview-btn.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
-
-    .view-transition { transition: opacity 0.2s ease, transform 0.2s ease; }
-    .view-transition.fade-out { opacity: 0; transform: translateY(6px); }
 
     .slider-group { flex: 1.5; min-width: 160px; }
     .customize-icon { font-size: 10px; cursor: pointer; color: var(--muted); margin-left: 4px; opacity: 0; transition: opacity 0.12s; }
@@ -133,7 +124,6 @@
     .testlab-row-header { display: flex; align-items: center; justify-content: space-between; padding: var(--gap-sm) var(--gap-md); background: var(--surface); border-bottom: 1px solid var(--border); font-size: var(--fs-xs); color: var(--muted); gap: var(--gap-sm); }
     .testlab-row-header .label { font-weight: 500; color: var(--fg-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .testlab-row-body { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--gap-sm); padding: var(--gap-md); }
-    .testlab-cell { }
     .testlab-cell-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; margin-bottom: var(--gap-xs); }
     .testlab-cell-content { font-size: var(--output-font-size, 13px); line-height: 1.6; max-height: 200px; overflow-y: auto; background: var(--surface-raised); border-radius: var(--radius); padding: var(--gap-sm); }
     .testlab-input { width: 100%; min-height: 60px; background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--gap-sm); color: var(--fg); font-size: var(--fs-sm); resize: vertical; outline: none; line-height: 1.5; }
@@ -253,7 +243,6 @@
     .discover-card li { padding: 2px 0; }
     .discover-card .kbd { font-family: var(--font-mono); font-size: 10px; background: var(--surface-raised); border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; color: var(--fg-secondary); }
     .discover-cta { display: block; width: 100%; padding: var(--gap-sm); margin-top: var(--gap-sm); }
-    .discover-tip { font-size: var(--fs-xs); color: var(--muted); text-align: center; padding: var(--gap-md); font-style: italic; }
     .history-list { padding-bottom: 60px; }
     .history-item { padding: var(--gap-md) var(--gap-lg); border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.12s; min-height: 52px; -webkit-tap-highlight-color: transparent; }
     .history-item:hover { background: var(--surface-raised); }
@@ -395,7 +384,6 @@
           <div class="input-section">
             <textarea id="raw-prompt" placeholder='Paste your raw prompt here… e.g. "write me a blog post about AI"'></textarea>
             <div class="input-counter" id="prompt-counter">0 words · 0 chars</div>
-            <div id="smart-badge-area"></div>
             <div id="auto-route-badge" style="display:none;margin-top:var(--gap-sm);"></div>
             <div id="variables-bar"></div>
             <div class="controls-row">
@@ -1126,7 +1114,7 @@ async function autoRoute(raw) {
       if ([...ts.options].some(o => o.value === parsed.tone)) ts.value = parsed.tone;
       if (parsed.format && FORMATS[parsed.format]) fs.value = parsed.format;
       if (parsed.complexity) document.getElementById('complexity-slider').value = Math.min(10, Math.max(1, parseInt(parsed.complexity) || 5));
-      badge.innerHTML = `Auto: <strong>${parsed.goal}</strong> · ${parsed.tone} · ${(parsed.format || 'rtcf').toUpperCase()} · Cpx ${parsed.complexity || 5}`;
+      badge.innerHTML = `Auto: <strong>${escapeHtml(parsed.goal)}</strong> · ${escapeHtml(parsed.tone)} · ${escapeHtml((parsed.format || 'rtcf').toUpperCase())} · Cpx ${parseInt(parsed.complexity) || 5}`;
       badge.style.background = 'var(--accent-soft)';
       badge.style.padding = '4px 10px';
       badge.style.borderRadius = '100px';
@@ -1545,7 +1533,7 @@ function renderHistory() {
   const starCount = history.filter(h => h.starred).length;
   chipContainer.innerHTML = `<span class="sidebar-chip ${_historyFilter === 'all' ? 'active' : ''}" onclick="setHistoryFilter('all')">All (${history.length})</span>` +
     (starCount > 0 ? `<span class="sidebar-chip ${_historyFilter === 'starred' ? 'active' : ''}" onclick="setHistoryFilter('starred')">Starred (${starCount})</span>` : '') +
-    goals.map(g => `<span class="sidebar-chip ${_historyFilter === g ? 'active' : ''}" onclick="setHistoryFilter('${g}')">${g.charAt(0).toUpperCase() + g.slice(1)}</span>`).join('') +
+    goals.map(g => `<span class="sidebar-chip ${_historyFilter === g ? 'active' : ''}" onclick="setHistoryFilter('${sanitizeId(g)}')">${escapeHtml(g.charAt(0).toUpperCase() + g.slice(1))}</span>`).join('') +
     (history.length > 0 ? `<span class="sidebar-chip" onclick="clearAllHistory()" style="color:var(--red);border-color:color-mix(in oklch, var(--red) 30%, transparent);">Clear</span>` : '');
 
   if (filtered.length === 0) {
@@ -1571,7 +1559,7 @@ function renderHistory() {
             <button onclick="event.stopPropagation();moveHistoryItem('${sid}', -1)" title="Move up">▲</button>
             <button onclick="event.stopPropagation();moveHistoryItem('${sid}', 1)" title="Move down">▼</button>
           </div>
-          <span class="history-goal ${h.goal}">${goalLabel}</span>
+          <span class="history-goal ${sanitizeId(h.goal)}">${escapeHtml(goalLabel)}</span>
         </div>
         <div class="history-actions">
           <button class="btn-icon" onclick="event.stopPropagation();toggleStar('${sid}')" title="${h.starred ? 'Unstar' : 'Star'}" style="padding:4px;min-width:auto;min-height:auto;">
