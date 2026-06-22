@@ -998,6 +998,7 @@ async function enhancePrompt() {
     autoResize(document.getElementById('raw-prompt'));
     updatePromptCounter();
     detectVariables();
+    if (document.getElementById('auto-route-check').checked) await autoRoute(enhanced);
     showToast('Prompt enhanced ✨', 'success');
   } catch (err) {
     showToast('Enhancement failed — using original', 'error');
@@ -1132,7 +1133,7 @@ async function autoRoute(raw) {
       badge.style.fontSize = 'var(--fs-xs)';
       badge.style.color = 'var(--accent)';
     }
-  } catch { badge.textContent = 'Auto-route failed — using your settings'; }
+  } catch { badge.textContent = 'Auto-route failed — using your settings'; badge.style.background = ''; badge.style.padding = ''; badge.style.borderRadius = ''; badge.style.fontSize = ''; badge.style.color = 'var(--muted)'; }
 }
 
 // ─── TEST LAB ───────────────────────────────────────────────────────────────
@@ -1177,6 +1178,7 @@ function removeTestInput(btn) {
   // Re-index remaining inputs
   container.querySelectorAll('.testlab-input').forEach((el, i) => {
     el.dataset.idx = i;
+    _testInputs[i] = el.value;
     el.previousElementSibling.textContent = `Test ${i + 1}`;
   });
 }
@@ -1198,10 +1200,14 @@ async function runTestLab() {
   statusEl.textContent = 'Running test lab...';
   statusEl.classList.add('active');
 
+  const forgeBtn = document.getElementById('forge-btn');
+  forgeBtn.disabled = true;
   try {
     const results = await Promise.all(inputs.map(raw =>
       callAI(raw, goal, tone, complexity).catch(e => ({ _error: e.message || 'Failed' }))
     ));
+    document.querySelectorAll('.rtcf-card textarea').forEach(el => el.value = '');
+    document.getElementById('output-section').classList.add('visible');
     renderTestLabResults(inputs, results);
     statusEl.textContent = 'Test lab complete';
   } catch (e) {
@@ -1209,8 +1215,8 @@ async function runTestLab() {
   }
   btn.textContent = origText;
   btn.disabled = false;
+  forgeBtn.disabled = false;
   statusEl.classList.remove('active');
-  document.getElementById('output-section').classList.add('visible');
 }
 
 function renderTestLabResults(inputs, results) {
@@ -2370,11 +2376,16 @@ function closeSidebar() {
 
 function resetForge() {
   document.getElementById('output-section').classList.remove('visible');
+  document.getElementById('testlab-results').style.display = 'none';
   const fmt = getFmt();
   fmt.sections.forEach(s => {
     const el = document.getElementById(`section-${s}`);
     if (el) el.value = '';
   });
+  document.getElementById('testlab-section').style.display = 'none';
+  document.getElementById('testlab-btn').style.borderColor = '';
+  _testInputs = [];
+  document.getElementById('testlab-inputs').innerHTML = '';
   document.getElementById('content').scrollTop = 0;
 }
 
