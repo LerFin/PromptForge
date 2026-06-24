@@ -660,7 +660,6 @@ const PROVIDERS = {
       { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B ★', recommended: true, pricing: { prompt: 0, completion: 0 } },
       { id: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B', pricing: { prompt: 0, completion: 0 } },
       { id: 'mixtral-8x7b-32768', label: 'Mixtral 8x7B', pricing: { prompt: 0, completion: 0 } },
-      { id: 'qwen-2.5-32b', label: 'Qwen 2.5 32B', pricing: { prompt: 0, completion: 0 } },
     ]
   },
   github: {
@@ -686,8 +685,8 @@ const PROVIDERS = {
   }
 };
 
-const PROVIDER_IDS = ['groq', 'github', 'openrouter'];
-const DEFAULT_PROVIDER = 'groq';
+const PROVIDER_IDS = ['openrouter', 'groq', 'github'];
+const DEFAULT_PROVIDER = 'openrouter';
 
 const FORMATS = {
   rtcf: { label: 'RTCF',
@@ -982,7 +981,7 @@ ${fmt.promptSuffix}`;
       { role: 'system', content: systemPrompt },
       { role: 'user', content: rawPrompt }
     ],
-    temperature: 0.6,
+    temperature: 0.3,
     max_tokens: cplx >= 7 ? 8192 : cplx >= 4 ? 4096 : 2048
   });
 
@@ -1007,6 +1006,12 @@ ${fmt.promptSuffix}`;
     let msg = 'API error';
     let retryAfter;
     try { const j = JSON.parse(errText); msg = j.error?.message || msg; } catch {}
+
+    if (res.status === 401 || res.status === 403) {
+      const pidE2 = getActiveProvider();
+      const pE2 = PROVIDERS[pidE2];
+      msg = `Invalid API key for ${pE2 ? pE2.label : 'this provider'}. Get a key at ${pE2 ? pE2.keyUrl : 'the provider website'}.`;
+    }
 
     const quotaMatch = msg.match(/retry in ([\d.]+)s/i);
     if (quotaMatch) retryAfter = parseFloat(quotaMatch[1]);
