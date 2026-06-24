@@ -609,7 +609,7 @@ function updateApiKeyHint() {
   const pid = getActiveProvider();
   const p = PROVIDERS[pid];
   const hint = document.getElementById('api-key-hint');
-  if (hint) hint.textContent = `Get a free key at ${p.keyUrl}`;
+  if (hint) hint.textContent = p ? `Get a free key at ${p.keyUrl}` : 'Enter your API key';
 }
 
 function saveSetupKey() {
@@ -741,6 +741,7 @@ function getProviderModels() {
 function getApiBaseUrl() {
   const pid = getActiveProvider();
   const p = PROVIDERS[pid];
+  if (!p) return PROVIDERS[DEFAULT_PROVIDER].baseUrl + '/chat/completions';
   if (IS_LOCAL && pid === 'openrouter') return '/api/chat';
   return p.baseUrl + '/chat/completions';
 }
@@ -765,7 +766,8 @@ function estimateCost(inputChars, maxTok) {
 
 function populateProviderSelect() {
   const ps = document.getElementById('provider-select');
-  const saved = localStorage.getItem('promptforge_provider') || DEFAULT_PROVIDER;
+  const savedRaw = localStorage.getItem('promptforge_provider');
+  const saved = savedRaw && PROVIDERS[savedRaw] ? savedRaw : DEFAULT_PROVIDER;
   ps.innerHTML = PROVIDER_IDS.map(pid => {
     const p = PROVIDERS[pid];
     return `<option value="${pid}" ${pid === saved ? 'selected' : ''}>${p.label}</option>`;
