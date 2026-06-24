@@ -378,7 +378,7 @@
             <input type="text" id="api-key-input" placeholder="Paste your API key here" />
             <button class="btn btn-primary btn-sm" onclick="saveApiKey()">Save</button>
             <button class="btn btn-ghost btn-sm" onclick="clearApiKey()" title="Remove your API key" style="font-size:11px;">Clear</button>
-            <span style="font-size:var(--fs-xs);color:var(--muted);">Stored in your browser. Only use on trusted devices.</span>
+            <span id="api-key-hint" style="font-size:var(--fs-xs);color:var(--muted);">Get a free key at console.groq.com</span>
           </div>
 
           <div class="input-section">
@@ -409,11 +409,13 @@
                 </div>
               </div>
               <div class="controls-row-bottom">
+                <div class="control-group" style="flex:0 0 auto;min-width:80px;">
+                  <label>Provider</label>
+                  <select id="provider-select" onchange="onProviderChange()" style="width:auto;"></select>
+                </div>
                 <div class="control-group">
                   <label>Model</label>
-                  <select id="model-select">
-                    <option value="google/gemma-4-31b-it:free">Gemma 4 31B (free)</option>
-                  </select>
+                  <select id="model-select"></select>
                 </div>
                 <div class="control-group slider-group" style="flex:2;">
                   <label>Complexity</label>
@@ -599,30 +601,37 @@
 // ─── API KEY ───────────────────────────────────────────────────────────────
 
 function getApiKey() {
-  return localStorage.getItem('promptforge_api_key') || '';
+  const pid = getActiveProvider();
+  return localStorage.getItem('promptforge_key_' + pid) || localStorage.getItem('promptforge_api_key') || '';
+}
+
+function updateApiKeyHint() {
+  const pid = getActiveProvider();
+  const p = PROVIDERS[pid];
+  const hint = document.getElementById('api-key-hint');
+  if (hint) hint.textContent = `Get a free key at ${p.keyUrl}`;
 }
 
 function saveSetupKey() {
   const val = document.getElementById('setup-key-input').value.trim();
   if (val) {
-    localStorage.setItem('promptforge_api_key', val);
+    const pid = getActiveProvider();
+    localStorage.setItem('promptforge_key_' + pid, val);
     document.getElementById('setup-overlay').style.display = 'none';
     showToast('API key saved', 'success');
-    populateModelSelect();
   }
 }
 
 function dismissSetup() {
   localStorage.setItem('promptforge_setup_dismissed', '1');
   document.getElementById('setup-overlay').style.display = 'none';
-  populateModelSelect();
 }
 
 function showApiKeyInput() {
   const banner = document.getElementById('api-key-banner');
   banner.classList.toggle('visible');
   if (banner.classList.contains('visible')) {
-    document.getElementById('api-key-input').value = localStorage.getItem('promptforge_api_key') || '';
+    document.getElementById('api-key-input').value = getApiKey();
     document.getElementById('api-key-input').focus();
   }
 }
@@ -630,20 +639,55 @@ function showApiKeyInput() {
 function saveApiKey() {
   const val = document.getElementById('api-key-input').value.trim();
   if (val) {
-    localStorage.setItem('promptforge_api_key', val);
+    const pid = getActiveProvider();
+    localStorage.setItem('promptforge_key_' + pid, val);
     document.getElementById('api-key-banner').classList.remove('visible');
     showToast('API key saved locally', 'success');
-    populateModelSelect();
   }
 }
 
 // ─── API ─────────────────────────────────────────────────────────────────
 
 const IS_LOCAL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-const OR_URL = IS_LOCAL ? '/api/chat' : 'https://openrouter.ai/api/v1/chat/completions';
-const CURATED_MODELS = [
-  { id: 'google/gemma-4-31b-it:free', label: 'Gemma 4 31B (free)', pricing: { prompt: 0, completion: 0 } }
-];
+
+const PROVIDERS = {
+  groq: {
+    label: 'Groq ⚡',
+    baseUrl: 'https://api.groq.com/openai/v1',
+    keyUrl: 'console.groq.com',
+    needsReferer: false,
+    models: [
+      { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B ★', recommended: true, pricing: { prompt: 0, completion: 0 } },
+      { id: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B', pricing: { prompt: 0, completion: 0 } },
+      { id: 'mixtral-8x7b-32768', label: 'Mixtral 8x7B', pricing: { prompt: 0, completion: 0 } },
+      { id: 'qwen-2.5-32b', label: 'Qwen 2.5 32B', pricing: { prompt: 0, completion: 0 } },
+    ]
+  },
+  github: {
+    label: 'GitHub Models',
+    baseUrl: 'https://models.inference.ai.azure.com',
+    keyUrl: 'github.com/settings/tokens',
+    needsReferer: false,
+    models: [
+      { id: 'gpt-4o-mini', label: 'GPT-4o Mini ★', recommended: true, pricing: { prompt: 0, completion: 0 } },
+      { id: 'gpt-4o', label: 'GPT-4o', pricing: { prompt: 0, completion: 0 } },
+      { id: 'Llama-3.3-70B', label: 'Llama 3.3 70B', pricing: { prompt: 0, completion: 0 } },
+      { id: 'Phi-4', label: 'Phi-4', pricing: { prompt: 0, completion: 0 } },
+    ]
+  },
+  openrouter: {
+    label: 'OpenRouter',
+    baseUrl: IS_LOCAL ? '' : 'https://openrouter.ai/api/v1',
+    keyUrl: 'openrouter.ai/keys',
+    needsReferer: true,
+    models: [
+      { id: 'google/gemma-4-31b-it:free', label: 'Gemma 4 31B (free)', pricing: { prompt: 0, completion: 0 } },
+    ]
+  }
+};
+
+const PROVIDER_IDS = ['groq', 'github', 'openrouter'];
+const DEFAULT_PROVIDER = 'groq';
 
 const FORMATS = {
   rtcf: { label: 'RTCF',
@@ -685,9 +729,28 @@ const FORMATS = {
 
 function getFmt() { return FORMATS[document.getElementById('format-select').value] || FORMATS.rtcf; }
 
+function getActiveProvider() {
+  return document.getElementById('provider-select').value || DEFAULT_PROVIDER;
+}
+
+function getProviderModels() {
+  const pid = getActiveProvider();
+  return PROVIDERS[pid] ? PROVIDERS[pid].models : PROVIDERS[DEFAULT_PROVIDER].models;
+}
+
+function getApiBaseUrl() {
+  const pid = getActiveProvider();
+  const p = PROVIDERS[pid];
+  if (IS_LOCAL && pid === 'openrouter') return '/api/chat';
+  return p.baseUrl + '/chat/completions';
+}
+
 function getModelPricing(modelId) {
-  const m = CURATED_MODELS.find(x => x.id === modelId);
-  return m ? m.pricing : null;
+  for (const pid of PROVIDER_IDS) {
+    const m = PROVIDERS[pid].models.find(x => x.id === modelId);
+    if (m) return m.pricing;
+  }
+  return null;
 }
 
 function estimateCost(inputChars, maxTok) {
@@ -700,15 +763,34 @@ function estimateCost(inputChars, maxTok) {
   return { cost, inTok, outTok, prompt: p.prompt, completion: p.completion };
 }
 
+function populateProviderSelect() {
+  const ps = document.getElementById('provider-select');
+  const saved = localStorage.getItem('promptforge_provider') || DEFAULT_PROVIDER;
+  ps.innerHTML = PROVIDER_IDS.map(pid => {
+    const p = PROVIDERS[pid];
+    return `<option value="${pid}" ${pid === saved ? 'selected' : ''}>${p.label}</option>`;
+  }).join('');
+}
+
+function onProviderChange() {
+  const pid = getActiveProvider();
+  localStorage.setItem('promptforge_provider', pid);
+  populateModelSelect();
+  updateApiKeyHint();
+  // Update the key banner if visible
+  const banner = document.getElementById('api-key-banner');
+  if (banner.classList.contains('visible')) {
+    document.getElementById('api-key-input').value = getApiKey();
+  }
+}
+
 function populateModelSelect() {
   const s = document.getElementById('model-select');
-  s.disabled = false;
-  const m = CURATED_MODELS[0];
-  s.innerHTML = '';
-  const o = document.createElement('option');
-  o.value = m.id; o.textContent = m.label;
-  o.selected = true;
-  s.appendChild(o);
+  const currentVal = s.value;
+  const models = getProviderModels();
+  s.innerHTML = models.map(m =>
+    `<option value="${m.id}" ${m.id === currentVal || (!currentVal && m.recommended) ? 'selected' : ''}>${m.label}</option>`
+  ).join('');
 }
 
 function renderOutputGrid() {
@@ -748,9 +830,10 @@ function toggleAdvanced() {
 }
 
 function clearApiKey() {
+  const pid = getActiveProvider();
+  localStorage.removeItem('promptforge_key_' + pid);
   localStorage.removeItem('promptforge_api_key');
   document.getElementById('api-key-banner').classList.remove('visible');
-  populateModelSelect();
   document.getElementById('setup-overlay').style.display = 'flex';
   showToast('API key cleared', 'success');
 }
@@ -827,6 +910,7 @@ function restoreFromHash() {
 
 function saveSession() {
   const data = {
+    p: getActiveProvider(),
     g: document.getElementById('goal-select').value,
     t: document.getElementById('tone-select').value,
     c: document.getElementById('complexity-slider').value,
@@ -841,6 +925,7 @@ function restoreSession() {
     const raw = localStorage.getItem('promptforge_session');
     if (!raw) return;
     const data = JSON.parse(raw);
+    if (data.p && PROVIDERS[data.p]) { document.getElementById('provider-select').value = data.p; populateModelSelect(); updateApiKeyHint(); }
     if (data.g) document.getElementById('goal-select').value = data.g;
     if (data.t) document.getElementById('tone-select').value = data.t;
     if (data.c) document.getElementById('complexity-slider').value = data.c;
@@ -899,14 +984,19 @@ ${fmt.promptSuffix}`;
     max_tokens: cplx >= 7 ? 8192 : cplx >= 4 ? 4096 : 2048
   });
 
-  const res = await fetch(OR_URL, {
+  const url = getApiBaseUrl();
+  const headers = {
+    'Authorization': `Bearer ${key}`,
+    'Content-Type': 'application/json'
+  };
+  const pid = getActiveProvider();
+  if (PROVIDERS[pid] && PROVIDERS[pid].needsReferer) {
+    headers['HTTP-Referer'] = 'https://promptforge.app';
+    headers['X-Title'] = 'PromptForge';
+  }
+  const res = await fetch(url, {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${key}`,
-      'Content-Type': 'application/json',
-      'HTTP-Referer': 'https://promptforge.app',
-      'X-Title': 'PromptForge'
-    },
+    headers,
     body
   });
 
@@ -971,11 +1061,14 @@ async function enhancePrompt() {
   try {
     const key = getApiKey();
     if (!key) { showToast('Set your API key first', ''); btn.textContent = origText; btn.disabled = false; return; }
-    const res = await fetch(OR_URL, {
+    const headers = { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' };
+    const pidE = getActiveProvider();
+    if (PROVIDERS[pidE] && PROVIDERS[pidE].needsReferer) { headers['HTTP-Referer'] = 'https://promptforge.app'; headers['X-Title'] = 'PromptForge'; }
+    const res = await fetch(getApiBaseUrl(), {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json', 'HTTP-Referer': 'https://promptforge.app', 'X-Title': 'PromptForge' },
+      headers,
       body: JSON.stringify({
-        model: CURATED_MODELS[0].id,
+        model: document.getElementById('model-select').value,
         messages: [
           { role: 'system', content: 'You are a prompt coach. Improve the user\'s raw prompt to be more specific, detailed, and effective. Fix vague language, add concrete constraints, and structure it for AI clarity. Return ONLY the improved prompt — no explanation, no prefix, no markdown.' },
           { role: 'user', content: raw }
@@ -1089,11 +1182,14 @@ async function autoRoute(raw) {
   try {
     const key = getApiKey();
     if (!key) return;
-    const res = await fetch(OR_URL, {
+    const headers = { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' };
+    const pidA = getActiveProvider();
+    if (PROVIDERS[pidA] && PROVIDERS[pidA].needsReferer) { headers['HTTP-Referer'] = 'https://promptforge.app'; headers['X-Title'] = 'PromptForge'; }
+    const res = await fetch(getApiBaseUrl(), {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json', 'HTTP-Referer': 'https://promptforge.app', 'X-Title': 'PromptForge' },
+      headers,
       body: JSON.stringify({
-        model: CURATED_MODELS[0].id,
+        model: document.getElementById('model-select').value,
         messages: [
           { role: 'system', content: 'You are a prompt classifier. Given a user\'s raw prompt, determine the best goal, tone, format, and complexity (1-10). Choose goal from: coding, writing, business, research, creative, automation, learning, analysis, summarization. Choose tone from: professional, aggressive, casual, technical, persuasive, empathetic, witty, inspirational, academic. Choose format from: rtcf, costar, roses, tag, facts. Return ONLY valid JSON with keys: goal, tone, format, complexity. No other text.' },
           { role: 'user', content: raw }
@@ -2436,7 +2532,7 @@ document.getElementById('raw-prompt').addEventListener('input', () => {
 });
 
 // Session auto-save on control changes
-['goal-select', 'tone-select', 'model-select', 'format-select'].forEach(id => {
+['goal-select', 'tone-select', 'model-select', 'format-select', 'provider-select'].forEach(id => {
   document.getElementById(id).addEventListener('change', saveSession);
 });
 document.getElementById('complexity-slider').addEventListener('input', saveSession);
@@ -2468,7 +2564,9 @@ window.addEventListener('hashchange', restoreFromHash);
   if (!hasKey && !localStorage.getItem('promptforge_setup_dismissed')) {
     document.getElementById('setup-overlay').style.display = 'flex';
   }
+  populateProviderSelect();
   populateModelSelect();
+  updateApiKeyHint();
 
   // Restore session (goal, tone, complexity, model, format)
   restoreSession();
