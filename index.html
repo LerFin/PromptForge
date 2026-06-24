@@ -577,8 +577,8 @@
 <div class="setup-overlay" id="setup-overlay" style="display:none;">
   <div class="setup-modal">
     <h2>Welcome to PromptForge</h2>
-    <p>Enter your <strong>OpenRouter API key</strong> to get started. Your key stays in your browser and is sent directly to OpenRouter — never shared elsewhere.</p>
-    <input type="password" id="setup-key-input" placeholder="sk-or-v1-..." autofocus />
+    <p id="setup-msg">Enter your API key to get started. Stored in your browser — never shared.</p>
+    <input type="password" id="setup-key-input" placeholder="Paste your API key..." autofocus />
     <button class="btn btn-primary" onclick="saveSetupKey()">Save My Key</button>
     <a class="skip-link" onclick="dismissSetup()">Skip for now (can't forge without a key)</a>
   </div>
@@ -618,7 +618,8 @@ function saveSetupKey() {
     const pid = getActiveProvider();
     localStorage.setItem('promptforge_key_' + pid, val);
     document.getElementById('setup-overlay').style.display = 'none';
-    showToast('API key saved', 'success');
+    const p = PROVIDERS[pid];
+    showToast(p ? `Key saved for ${p.label}` : 'API key saved', 'success');
   }
 }
 
@@ -778,10 +779,14 @@ function onProviderChange() {
   localStorage.setItem('promptforge_provider', pid);
   populateModelSelect();
   updateApiKeyHint();
-  // Update the key banner if visible
   const banner = document.getElementById('api-key-banner');
   if (banner.classList.contains('visible')) {
     document.getElementById('api-key-input').value = getApiKey();
+  }
+  const overlay = document.getElementById('setup-overlay');
+  if (overlay.style.display === 'flex') {
+    const p = PROVIDERS[pid];
+    document.getElementById('setup-msg').innerHTML = `Enter your <strong>${p ? p.label : ''} API key</strong> to get started. Get one at <strong>${p ? p.keyUrl : ''}</strong>.`;
   }
 }
 
@@ -835,7 +840,10 @@ function clearApiKey() {
   localStorage.removeItem('promptforge_key_' + pid);
   localStorage.removeItem('promptforge_api_key');
   document.getElementById('api-key-banner').classList.remove('visible');
-  document.getElementById('setup-overlay').style.display = 'flex';
+  const overlay = document.getElementById('setup-overlay');
+  overlay.style.display = 'flex';
+  const p = PROVIDERS[pid];
+  document.getElementById('setup-msg').innerHTML = `Enter your <strong>${p ? p.label : ''} API key</strong> to get started. Get one at <strong>${p ? p.keyUrl : ''}</strong>.`;
   showToast('API key cleared', 'success');
 }
 
@@ -2566,14 +2574,18 @@ window.addEventListener('hashchange', restoreFromHash);
   const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
   document.getElementById('kbd-mod').textContent = isMac ? '⌘' : 'Ctrl';
 
-  // First-time setup: prompt for personal API key
-  const hasKey = localStorage.getItem('promptforge_api_key');
-  if (!hasKey && !localStorage.getItem('promptforge_setup_dismissed')) {
-    document.getElementById('setup-overlay').style.display = 'flex';
-  }
   populateProviderSelect();
   populateModelSelect();
   updateApiKeyHint();
+
+  // First-time setup: prompt for API key (check all providers + legacy key)
+  const hasKey = PROVIDER_IDS.some(pid => localStorage.getItem('promptforge_key_' + pid)) || localStorage.getItem('promptforge_api_key');
+  if (!hasKey && !localStorage.getItem('promptforge_setup_dismissed')) {
+    document.getElementById('setup-overlay').style.display = 'flex';
+    const pid = getActiveProvider();
+    const p = PROVIDERS[pid];
+    document.getElementById('setup-msg').innerHTML = `Enter your <strong>${p ? p.label : ''} API key</strong> to get started. Get one at <strong>${p ? p.keyUrl : ''}</strong>. Stored in your browser.`;
+  }
 
   // Restore session (goal, tone, complexity, model, format)
   restoreSession();
